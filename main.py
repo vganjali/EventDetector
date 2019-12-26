@@ -43,11 +43,12 @@ def main():
                       'wavelets': [wlts.mmi_gaussian(s, 9, window=0.5, weight=1, mod=0.5, shift=1, dt=dt) for s in scales]}
                 }
     if plot:
+        plt.ion()
         for k in wavelets.keys():
             w = wavelets[k]['wavelets'][0]
             plt.plot(np.arange(len(w))-len(w)/2, w, label=k)
+        plt.title('Wavelets')
         plt.legend()
-        plt.show()
     pad = max([max([len(w) for w in wavelets[k]['wavelets']]) for k in wavelets.keys()])
     total = len(filenames)
     n, t0 = 0, time.time()
@@ -68,5 +69,8 @@ def main():
         rem_time = int((total-n)*(time.time()-t0)/n)
         progress(n,total,status=f'{f}: {events_len} events detected, remaining time:{rem_time:.0f} [s]',length=50)
     print(f"\nanalysis finished in {time.time()-t0:.2f} [s]")
+    if plot:
+        plt.ioff()
+        plt.show()
 if __name__ == '__main__':
     main()
