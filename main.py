@@ -16,18 +16,20 @@ def progress(count, total, title='', status='', length=50):
     sys.stdout.flush()
 
 def main():
-    scale = [0.1e-3, 1.0e-3, 30]
-    log = True
-    xlim = [0, 10]
-    resolution = 10
-    plot = True
-    save = False
+    scale = [0.1e-3, 1.0e-3, 30]    # dt ranges used for scaling wavelets [min, max, count]
+    log = True                      # linear/logarthmic range for dt
+    xlim = [0, 10]                  # time window to do analysis in [s]. [0,-1] means the entire trace
+    resolution = 10                 # number of points to consider for minimum dt as the binning size
+    plot = True                     # show the output plot, including trace and detected events in time-scale space
+    save = False                    # save the detected events (and plots) into the .hdf5 file
+    thresh = 5                      # threshold value used to detect events
+    dirname = ''                    # directory of the .ptu files
+    filenames = ['default_007']     # list of .ptu files to analyze
+    globRes = 250e-12               # globRes of T2 traces
+    selectivity = 1                 # how selectively it should detect events
+    chunksize = 100000              # chunksize used to split the binned trace to process in parallel
+    
     dt = scale[0]/resolution
-    thresh = 5
-    dirname = ''
-    filenames = ['default_007']
-    globRes = 250e-12
-    selectivity = 1
     if log:
         scales = np.logspace(np.log10(scale[0]), np.log10(scale[1]), scale[2], dtype=np.float64)
     else:
@@ -46,7 +48,6 @@ def main():
             plt.plot(np.arange(len(w))-len(w)/2, w, label=k)
         plt.legend()
         plt.show()
-    chunksize = 100000
     pad = max([max([len(w) for w in wavelets[k]['wavelets']]) for k in wavelets.keys()])
     total = len(filenames)
     n, t0 = 0, time.time()
@@ -57,7 +58,7 @@ def main():
             n += 1
             rem_time = int((total-n)*(time.time()-t0)/n)
             progress(n,total,status=f'binning files, remaining time:{rem_time} [s]',length=50)
-    print('')
+    print(f"\nbinning finished in {time.time()-t0:.2f} [s]")
     total = len(filenames)
     n, t0 = 0, time.time()
     for f in filenames:
@@ -66,6 +67,6 @@ def main():
         n += 1
         rem_time = int((total-n)*(time.time()-t0)/n)
         progress(n,total,status=f'{f}: {events_len} events detected, remaining time:{rem_time:.0f} [s]',length=50)
-    print('')
+    print(f"\nanalysis finished in {time.time()-t0:.2f} [s]")
 if __name__ == '__main__':
     main()
