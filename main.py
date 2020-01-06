@@ -20,6 +20,7 @@ def main():
     log = True                      # linear/logarthmic range for dt
     xlim = [0, -1]                  # time window to do analysis in [s]. [0,-1] means the entire trace
     resolution = 10                 # number of points to consider for minimum dt as the binning size
+    refine = True
     plot = True                     # show the output plot, including trace and detected events in time-scale space
     save = True                     # save the detected events (and plots) into the .hdf5 file
     image_format = 'tiff'
@@ -93,7 +94,7 @@ def main():
     n, t0 = 0, time.time()
     for f in filenames:
         progress(n,total,status=f'analyzing {f}, remaining time: ...',length=50)
-        events_len = len(mpf.analyze_trace(dirname+f, wavelets, scales, xlim, resolution, thresh, selectivity, chunksize, log=log, save=save, plot=plot, cwt_plot=False, image_fmt=image_format))
+        events_len = len(mpf.analyze_trace(dirname+f, wavelets, scales, xlim, resolution, thresh, selectivity, chunksize, log=log, refine=refine, save=save, plot=plot, cwt_plot=False, image_fmt=image_format))
         n += 1
         rem_time = int((total-n)*(time.time()-t0)/n)
         progress(n,total,status=f'{f}: {events_len} event(s) detected, remaining time:{rem_time:.0f} [s]',length=50)

@@ -113,7 +113,7 @@ def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt,
     
         return _events
 
-def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectivity, chunksize, log=True, save=False, plot=True, cwt_plot=False, image_fmt='tiff'):
+def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectivity, chunksize, log=True, refine=True, save=False, plot=True, cwt_plot=False, image_fmt='tiff'):
     dt = min(scales)/resolution
     pad = max([max([len(w) for w in wavelets[k]['wavelets']]) for k in wavelets.keys()])
     with h5py.File(filename+'.hdf5', 'a') as f:
@@ -190,11 +190,11 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
                 progress(n,total,status=f'filtering events, remaining time: ...',length=50)
                 for k,_ in enumerate(wavelets.keys()):
                     n += 1
-                    selected_events.append(filter_events(_events[_events['name'] == k], selectivity=selectivity, refine=True))
+                    selected_events.append(filter_events(_events[_events['name'] == k], selectivity=selectivity, refine=refine))
                     rem_time = int((total-n)*(time.time()-t0)/n)
                     progress(n,total,status=f'filtering events, remaining time:{rem_time}[s]',length=50)
                 selected_events = np.concatenate(tuple(selected_events), axis=0)
-                selected_events = filter_events(selected_events, selectivity=selectivity, refine=True)
+                selected_events = filter_events(selected_events, selectivity=selectivity, refine=refine)
                 # print(selected_events[:10])
                 selected_events['time'] += signal['time'][_xlim[0]]*1e-12
                 if save:
