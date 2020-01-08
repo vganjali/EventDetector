@@ -20,15 +20,20 @@ def main():
     log = True                      # linear/logarthmic range for dt
     xlim = [0, -1]                  # time window to do analysis in [s]. [0,-1] means the entire trace
     resolution = 10                 # number of points to consider for minimum dt as the binning size
-    refine = True
+    refine = True                   # refine initial local maximas using Euclidean Distance
     plot = True                     # show the output plot, including trace and detected events in time-scale space
+    cwt_plot = False                # show CWT colorplot (for long traces will slow down significantly!)
     save = True                     # save the detected events (and plots) into the .hdf5 file
     image_format = 'tiff'
-    thresh = 5                      # threshold value used to detect events
-    dirname = ''                    # directory of the .ptu files
-    filenames = ['default_007']     # list of .ptu files to analyze
+    thresh = 10                      # threshold value used to detect events
+    # dirname = 'G:/My Drive/PhD/experiments/APD_Traces/Gopi/Gopi_plasmids_Dec_2019/2019-11-22 [TC7 D9 GB 200nm bead testing]/'                    # directory of the .ptu files
+    # dirname = 'G:/My Drive/PhD/experiments/APD_Traces/Gopi/Gopi_plasmids_Dec_2019/2019-10-30 [KPC VIM NDM BYU prep plasmid TC7 G]/'
+    # dirname = 'C:/Users/vg88/Dropbox/Codes/Python/'
+    dirname = 'D:/Experiments/Gopi/New folder/'
+    # filenames = ['default_004']
+    filenames = ['default_004','default_005','default_006']     # list of .ptu files to analyze
     globRes = 250e-12               # globRes of T2 traces
-    selectivity = 2                 # how selectively it should detect events
+    selectivity = 3                 # how selectively it should detect events
     chunksize = 100000              # chunksize used to split the binned trace to process in parallel
     
     dt = scale[0]/resolution
@@ -41,12 +46,20 @@ def main():
                 #       'wavelets': [wlts.mmi_gaussian_skewed(s, 2, window=1, weight=1, mod=0.6, shift=1, dt=dt) for s in scales]},
                 # '3p':{'N': 3, \
                 #       'wavelets': [wlts.mmi_gaussian_skewed(s, 3, window=1, weight=1, mod=0.6, shift=1, dt=dt) for s in scales]},
-                '7p':{'N': 7, \
-                      'wavelets': [wlts.mmi_gaussian_skewed(s, 7, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
-                '8p':{'N': 8, \
+                'CH1':{'N': 11, \
+                      'wavelets': [wlts.mmi_gaussian_skewed(s, 11, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
+                # 'CH1_1':{'N': 12, \
+                #       'wavelets': [wlts.mmi_gaussian_skewed(s, 12, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
+                'CH2':{'N': 8, \
                       'wavelets': [wlts.mmi_gaussian_skewed(s, 8, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
-                '9p':{'N': 9, \
-                      'wavelets': [wlts.mmi_gaussian_skewed(s, 9, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
+                # 'CH2_1':{'N': 9, \
+                #       'wavelets': [wlts.mmi_gaussian_skewed(s, 9, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
+                'CH3':{'N': 5, \
+                      'wavelets': [wlts.mmi_gaussian_skewed(s, 5, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
+                # 'CH3_1':{'N': 6, \
+                #       'wavelets': [wlts.mmi_gaussian_skewed(s, 6, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
+                # '9p':{'N': 9, \
+                #       'wavelets': [wlts.mmi_gaussian_skewed(s, 9, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
                 # '9p':{'N': 9, \
                 #       'wavelets': [wlts.mmi_gaussian_skewed(s, 9, window=1, weight=1, mod=0.6, shift=1, dt=dt) for s in scales]},
                 # '7pp':{'N': 7, \
@@ -58,47 +71,46 @@ def main():
                 }
     if plot:
         plt.ion()
-        fig, ax = plt.subplots(1,2,figsize=(12,3))
+        fig_wlt, ax_wlt = plt.subplots(1,2,figsize=(12,3), num='Wavelets used for analysis')
         for n,k in enumerate(wavelets.keys()):
             w = wavelets[k]['wavelets'][0]
             freq = np.fft.fftshift(np.fft.fftfreq(len(w)))[int(len(w)/2):]
             FFT_w = np.abs(np.fft.fftshift(np.fft.fft(w))[int(len(w)/2):])
-            ax[0].plot((np.arange(len(w))-len(w)/2)*dt*1e3, w, color=f'C{n}', label=k)
-            ax[0].set_title('Wavelets (time)')
+            ax_wlt[0].plot((np.arange(len(w))-len(w)/2)*dt*1e3, w, color=f'C{n}', label=k)
+            ax_wlt[0].set_title('time domain')
             _end = int(len(freq)/2)
-            ax[1].plot(freq[:-_end], FFT_w.real[:-_end], color=f'C{n}', linestyle='-', label=f'{k} (real)')
-            ax[1].plot(freq[:-_end], FFT_w.imag[:-_end], color=f'C{n}', linestyle=':', label=f'{k} (imag)')
-            ax[1].set_title('Wavelets (frequency)')
-        for a in ax:
+            ax_wlt[1].plot(freq[:-_end], FFT_w.real[:-_end], color=f'C{n}', linestyle='-', label=f'{k} (real)')
+            ax_wlt[1].plot(freq[:-_end], FFT_w.imag[:-_end], color=f'C{n}', linestyle=':', label=f'{k} (imag)')
+            ax_wlt[1].set_title('frequency domain (FFT)')
+        for a in ax_wlt:
             a.grid()
             a.legend()
-        plt.tight_layout()
+        fig_wlt.tight_layout()
         plt.show()
-        fig.canvas.draw()
-        fig.canvas.flush_events()
+        fig_wlt.canvas.draw()
+        fig_wlt.canvas.flush_events()
         plt.pause(0.1)
     # return
 
-    pad = max([max([len(w) for w in wavelets[k]['wavelets']]) for k in wavelets.keys()])
     total = len(filenames)
     n, t0 = 0, time.time()
     with Executor() as e:
-        progress(n,total,status=f'binning files, remaining time: ...',length=50)
+        progress(n,total,status=f'binning files, remaining time: ...',length=30)
         _futures = [e.submit(ptu.processHT2, filename=dirname+f, globRes=globRes, binsize=dt, chunksize=1000000) for f in filenames]
         for f in as_completed(_futures):
             n += 1
             rem_time = int((total-n)*(time.time()-t0)/n)
-            progress(n,total,status=f'binning files, remaining time:{rem_time} [s]',length=50)
+            progress(n,total,status=f'binning files, remaining time:{rem_time} [s]',length=30)
     print(f"\nbinning finished in {time.time()-t0:.2f} [s]")
     total = len(filenames)
     n, t0 = 0, time.time()
     for f in filenames:
-        progress(n,total,status=f'analyzing {f}, remaining time: ...',length=50)
-        events_len = len(mpf.analyze_trace(dirname+f, wavelets, scales, xlim, resolution, thresh, selectivity, chunksize, log=log, refine=refine, save=save, plot=plot, cwt_plot=False, image_fmt=image_format))
+        print(f'\n>> analyzing {f}')
+        events_len = len(mpf.analyze_trace(dirname+f, wavelets, scales, xlim, resolution, thresh, selectivity, chunksize, log=log, refine=refine, save=save, plot=plot, cwt_plot=cwt_plot, image_fmt=image_format))
         n += 1
         rem_time = int((total-n)*(time.time()-t0)/n)
-        progress(n,total,status=f'{f}: {events_len} event(s) detected, remaining time:{rem_time:.0f} [s]',length=50)
-    print(f"\nanalysis finished in {time.time()-t0:.2f} [s]")
+        progress(n,total,status=f'{f}: {events_len} event(s) detected, remaining time:{rem_time:.0f} [s]',length=30)
+    print(f"\n>> finished in {time.time()-t0:.2f} [s]")
     if plot:
         plt.ioff()
         plt.show()
