@@ -43,6 +43,7 @@ def processHT2(filename, binsize=1e-3, chunksize=100, globRes=250e-12, timeout=5
                     ds_count[binned_sparse_time[0]:int(binned_sparse_time[-1]+1)] = dense_data
                     offset += chunksize*4
                 except Exception as excpt:
+                    # print(excpt)
                     if (len(f_mmap[offset:])/4 < chunksize):
                         chunksize = int(len(f_mmap[offset:])/4)
                     timeout -= 1
