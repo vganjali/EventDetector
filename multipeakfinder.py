@@ -22,9 +22,6 @@ def spectral_cluster(all_events, selectivity=1, plot=False):
     _rr = np.tile(0.5/selectivity*np.multiply(all_events['N'],all_events['scale']),len(all_events)).reshape(_dist.shape)
     _rr += _rr.transpose()
     _adjacency = _rr**2-_dist
-    # _rr = np.tile((0.5/selectivity*np.multiply(all_events['N'],all_events['scale']))**2,len(all_events)).reshape(_dist.shape)
-    # _rr += np.tile((0.5/selectivity*all_events['scale'])**2,len(all_events)).reshape(_dist.shape)
-    # _adjacency = _rr - _dist
     _mask = np.greater_equal(_rr**2,_dist).astype(np.bool)
     for f in np.argwhere(np.sum(_mask,axis=0) == 1).flatten():
         all_events[f]['name'] = -1
@@ -53,12 +50,6 @@ def detect_islands(all_events, selectivity):
     all_events_t_r = all_events['time']+0.5/selectivity*np.multiply(all_events['N'],all_events['scale'])
     _index_r = np.argsort(all_events_t_r)
     all_events_overlap = all_events_t_r[_index_r[:-1]]-all_events_t_l[_index_l[1:]]
-    # print(_index_l,_index_r)
-    # all_events.sort(order='time')
-    # all_events_t_diff = np.diff(all_events['time'])
-    # all_events_dt_add = 0.5/selectivity*(np.multiply(all_events['N'][:-1],all_events['scale'][:-1])+\
-                            #  np.multiply(all_events['N'][1:],all_events['scale'][1:]))
-    # all_events_overlap = np.sign(all_events_dt_add - all_events_t_diff)
     _slices = np.argwhere(all_events_overlap <= 0).flatten()+1
     _islands = np.split(all_events[_index_l], _slices, axis=0)
     return _islands
@@ -69,12 +60,6 @@ def filter_events(all_events, selectivity, refine=True):
     all_events_t_r = all_events['time']+0.5/selectivity*np.multiply(all_events['N'],all_events['scale'])
     _index_r = np.argsort(all_events_t_r)
     all_events_overlap = all_events_t_r[_index_r[:-1]]-all_events_t_l[_index_l[1:]]
-    # print(_index_l,_index_r)
-    # all_events.sort(order='time')
-    # all_events_t_diff = np.diff(all_events['time'])
-    # all_events_dt_add = 0.5/selectivity*(np.multiply(all_events['N'][:-1],all_events['scale'][:-1])+\
-                            #  np.multiply(all_events['N'][1:],all_events['scale'][1:]))
-    # all_events_overlap = np.sign(all_events_dt_add - all_events_t_diff)
     _slices = np.argwhere(all_events_overlap <= 0).flatten()+1
     _islands = np.split(all_events[_index_l], _slices, axis=0)
     if refine:
@@ -100,23 +85,6 @@ def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt,
                                                                 [i]*len(_index))), dtype=d_type), axis=0)
             _cwt_list[k] = (_cwt)
         return _events, _cwt_list
-            # fig, ax1 = plt.subplots(1,1,figsize=(14,4))
-            # ax2 = plt.twinx(ax1)
-            # ax1.yaxis.tick_right()
-            # ax2.yaxis.tick_left()
-            # ax2.yaxis.set_label_position('left')
-            # ax1.imshow(_cwt, extent=[slice_l*dt, _cwt.shape[1]*dt, scales[0]*1e3, scales[-1]*1e3], origin='lower', cmap='inferno')
-            # ax1.set_yticks([])
-            # ax1.axis('auto')
-            # ax2.set_ylabel(f'\u0394t [ms]')
-            # [ax2.add_artist(Ellipse((e['time'], e['scale']*1e3), width=1/selectivity*e['scale'], height=1/selectivity*e['scale']*1e3, clip_on=True, zorder=10, linewidth=1,
-            #         edgecolor=(0,1,1,0.2), facecolor=(1, 0, 0, .025))) for e in _events]
-            # ax2.plot(_events['time'], _events['scale']*1e3, '.', color='green')
-            # ax2.set_ylim(scales[0]*1e3,scales[-1]*1e3)
-            # ax1.set_xlim(slice_l*dt, _cwt.shape[1]*dt)
-            # if log:
-            #     ax2.set_yscale('log')
-            # plt.show()
     else:
         for i,k in enumerate(wavelets.keys()):
             for n, w in enumerate(wavelets[k]['wavelets']):
@@ -157,7 +125,6 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
             fig_trace.canvas.draw()
             fig_trace.canvas.flush_events()
             plt.pause(0.1)
-            # input('Press Enter to continue (Ctrl+C to exit)...')
         slices = list(range(chunksize, len(signal['count'][_xlim[0]:_xlim[1]]), chunksize))
         slices_l = [0]+[s-pad for s in slices]
         slices_r = [s+pad for s in slices]+[len(signal['count'][_xlim[0]:_xlim[1]])-1]
@@ -171,7 +138,6 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
         selected_events = []
         with Executor() as e:
             progress(n,total,status=f'detecting events, remaining time: ...',length=30)
-            # find_events(signal['count'], wavelets, scales, pad, slices[0], thresh, selectivity, dt, log=log, plot=True)
             _futures = [e.submit(find_events, s, wavelets, scales, pad, slices[m], thresh, selectivity, dt, log=log, plot=cwt_plot) for m,s in enumerate(signals)]
             for _f in as_completed(_futures):
                 if cwt_plot:
@@ -226,20 +192,7 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
                         selected_events = np.array([_island[np.argmax(_island['coeff'])] for _island in _islands])
                 selected_events = np.concatenate(tuple(selected_events), axis=0)
                 selected_events = [spectral_cluster(_island) for _island in detect_islands(selected_events, selectivity)]
-                # selected_events = filter_events(selected_events, selectivity=selectivity, refine=refine)
                 selected_events = np.concatenate(tuple(selected_events), axis=0)
-                # total = len(wavelets.keys())
-                # n, t0 = 0, time.time()
-                # progress(n,total,status=f'filtering events, remaining time: ...',length=50)
-                # _futures = [e.submit(find_events, s, wavelets, scales, pad, slices[m], thresh, selectivity, dt, log=log, plot=cwt_plot) for m,s in enumerate(signals)]
-                # for k,_ in enumerate(wavelets.keys()):
-                #     n += 1
-                #     selected_events.append(filter_events(_events[_events['name'] == k], selectivity=selectivity, refine=refine))
-                #     rem_time = int((total-n)*(time.time()-t0)/n)
-                #     progress(n,total,status=f'filtering events, remaining time:{rem_time}[s]',length=50)
-                # selected_events = np.concatenate(tuple(selected_events), axis=0)
-                # selected_events = filter_events(selected_events, selectivity=selectivity, refine=refine)
-                # print(selected_events[:10])
                 selected_events['time'] += signal['time'][_xlim[0]]*1e-12
                 if save:
                     if f'events/{thresh:.2f}' in f[f'{dt:010.6f}'].keys():
@@ -289,10 +242,4 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
                     fig_hist.savefig(f'{filename}_plots/thresh_{thresh}_xlim_{xlim[0]}_{xlim[1]}_hists.{image_fmt}', format=image_fmt, bbox_inches='tight', transparent=True)
                 plt.show()
                 plt.pause(0.1)
-                # fig, ax = plt.subplots(1,2,figsize=(12,3))
-                # _loc = [np.where(signal['time'] >= e['time'])[0][0] for e in selected_events]
-                # _loc = [[_loc-int(0.6*e['N']*e['scale'])]]
-                # _events_avg = np.mean([signal['count'][_loc[n]-] for n,e in enumerate(selected_events)])
-                # freq = np.fft.fftshift(np.fft.fftfreq(len(w)))[int(len(w)/2):]
-                # FFT_w = np.abs(np.fft.fftshift(np.fft.fft(w))[int(len(w)/2):])
     return selected_events
