@@ -11,6 +11,8 @@ from concurrent.futures import as_completed
 import h5py as h5py
 import sys as sys
 
+d_type = np.dtype([('time', 'f8'), ('scale', 'f8'), ('coeff', 'f8'), ('N', 'f8'), ('name', 'i8')])
+
 def progress(count, total, title='', status='', length=50):
     per = count/total
     sys.stdout.write(f" [{'#'*round(per*length)+'-'*(length-round(per*length))}] {per*100:3.1f}% | {status:30s} \r")
@@ -83,7 +85,6 @@ def filter_events(all_events, selectivity, refine=True):
     return selected_events
 
 def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt, log=False, plot=False):
-    d_type = np.dtype([('time', 'f8'), ('scale', 'f8'), ('coeff', 'f8'), ('N', 'f8'), ('name', 'i8')])
     _events = np.empty((0,), dtype=d_type)
     if plot:
         _cwt_list = {}
@@ -227,9 +228,10 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
                     else:
                         selected_events.append([np.array(_island[np.argmax(_island['coeff'])]) for _island in _islands])
                 selected_events = np.concatenate(tuple(selected_events), axis=0)
-                selected_events = [spectral_cluster(_island) for _island in detect_islands(selected_events, selectivity)]
-                # selected_events = filter_events(selected_events, selectivity=selectivity, refine=refine)
-                selected_events = np.concatenate(tuple(selected_events), axis=0)
+                if len(wavelets.keys()) > 1:
+                    selected_events = [spectral_cluster(_island) for _island in detect_islands(selected_events, selectivity)]
+                    # selected_events = filter_events(selected_events, selectivity=selectivity, refine=refine)
+                    selected_events = np.concatenate(tuple(selected_events), axis=0)
                 # total = len(wavelets.keys())
                 # n, t0 = 0, time.time()
                 # progress(n,total,status=f'filtering events, remaining time: ...',length=50)
