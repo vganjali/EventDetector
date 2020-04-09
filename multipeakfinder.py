@@ -11,6 +11,8 @@ from concurrent.futures import as_completed
 import h5py as h5py
 import sys as sys
 
+d_type = np.dtype([('time', 'f8'), ('scale', 'f8'), ('coeff', 'f8'), ('N', 'f8'), ('name', 'i8')])
+    
 def progress(count, total, title='', status='', length=50):
     per = count/total
     sys.stdout.write(f" [{'#'*round(per*length)+'-'*(length-round(per*length))}] {per*100:3.1f}% | {status:30s} \r")
@@ -83,21 +85,30 @@ def filter_events(all_events, selectivity, refine=True):
     return selected_events
 
 def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt, log=False, plot=False):
-    d_type = np.dtype([('time', 'f8'), ('scale', 'f8'), ('coeff', 'f8'), ('N', 'f8'), ('name', 'i8')])
     _events = np.empty((0,), dtype=d_type)
     if plot:
         _cwt_list = {}
         for i,k in enumerate(wavelets.keys()):
             _cwt = np.empty((len(wavelets[k]['wavelets']), len(signal[pad:-pad])))
-            for n, w in enumerate(wavelets[k]['wavelets']):
-                _cwt[n,:] = (0.5*np.correlate(signal, w, mode='same')*np.sqrt(dt))[pad:-pad]
-                _cwt[n,:] += np.abs(_cwt[n,:])
-                _index, _ = find_peaks(_cwt[n,:], distance=wavelets[k]['N']*scales[n]/dt, height=thresh)
-                _events = np.append(_events, np.array(list(zip((slice_l+_index)*dt, \
-                                                                [scales[n]]*len(_index), \
-                                                                _cwt[n,_index], \
-                                                                [wavelets[k]['N']]*len(_index), \
-                                                                [i]*len(_index))), dtype=d_type), axis=0)
+            if np.iscomplexobj(wavelets[k]['wavelets']):
+                for n, w in enumerate(wavelets[k]['wavelets']):
+                    _cwt[n,:] = np.abs(np.correlate(signal, w, mode='same')*np.sqrt(dt))[pad:-pad]
+                    _index, _ = find_peaks(_cwt[n,:], distance=wavelets[k]['N']*scales[n]/dt, height=thresh)
+                    _events = np.append(_events, np.array(list(zip((slice_l+_index)*dt, \
+                                                                    [scales[n]]*len(_index), \
+                                                                    _cwt[n,_index], \
+                                                                    [wavelets[k]['N']]*len(_index), \
+                                                                    [i]*len(_index))), dtype=d_type), axis=0)
+            else:
+                for n, w in enumerate(wavelets[k]['wavelets']):
+                    _cwt[n,:] = (0.5*np.correlate(signal, w, mode='same')*np.sqrt(dt))[pad:-pad]
+                    _cwt[n,:] += np.abs(_cwt[n,:])
+                    _index, _ = find_peaks(_cwt[n,:], distance=wavelets[k]['N']*scales[n]/dt, height=thresh)
+                    _events = np.append(_events, np.array(list(zip((slice_l+_index)*dt, \
+                                                                    [scales[n]]*len(_index), \
+                                                                    _cwt[n,_index], \
+                                                                    [wavelets[k]['N']]*len(_index), \
+                                                                    [i]*len(_index))), dtype=d_type), axis=0)
             _cwt_list[k] = (_cwt)
         return _events, _cwt_list
             # fig, ax1 = plt.subplots(1,1,figsize=(14,4))
@@ -119,15 +130,25 @@ def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt,
             # plt.show()
     else:
         for i,k in enumerate(wavelets.keys()):
-            for n, w in enumerate(wavelets[k]['wavelets']):
-                _cwt = (0.5*np.correlate(signal, w, mode='same')*np.sqrt(dt))[pad:-pad]
-                _cwt += np.abs(_cwt)
+            if np.iscomplexobj(wavelets[k]['wavelets']):
+                for n, w in enumerate(wavelets[k]['wavelets']):
+                _cwt = np.abs(np.correlate(signal, w, mode='same')*np.sqrt(dt))[pad:-pad]
                 _index, _ = find_peaks(_cwt, distance=wavelets[k]['N']*scales[n]/dt, height=thresh)
                 _events = np.append(_events, np.array(list(zip((slice_l+_index)*dt, \
                                                                 [scales[n]]*len(_index), \
                                                                 _cwt[_index], \
                                                                 [wavelets[k]['N']]*len(_index), \
                                                                 [i]*len(_index))), dtype=d_type), axis=0)
+            else:
+                for n, w in enumerate(wavelets[k]['wavelets']):
+                    _cwt = (0.5*np.correlate(signal, w, mode='same')*np.sqrt(dt))[pad:-pad]
+                    _cwt += np.abs(_cwt)
+                    _index, _ = find_peaks(_cwt, distance=wavelets[k]['N']*scales[n]/dt, height=thresh)
+                    _events = np.append(_events, np.array(list(zip((slice_l+_index)*dt, \
+                                                                    [scales[n]]*len(_index), \
+                                                                    _cwt[_index], \
+                                                                    [wavelets[k]['N']]*len(_index), \
+                                                                    [i]*len(_index))), dtype=d_type), axis=0)
     
         return _events
 
@@ -151,7 +172,7 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
             plt.subplots_adjust(hspace=0)
             ax_trace[0].plot(signal['time'][_xlim[0]:_xlim[1]]*1e-12, signal['count'][_xlim[0]:_xlim[1]], color='black', linewidth=0.5)
             ax_trace[0].set_title(filename.split('/')[-1])
-            ax_trace[0].set_ylabel(f'signal [cnts/{dt*1e3:.3f}ms]')
+            ax_trace[0].set_ylabel(f'Signal [cnts/{dt*1e3:.3f}ms]')
             ax_trace[0].set_ylim(bottom=0)
             fig_trace.tight_layout()
             fig_trace.canvas.draw()
@@ -201,7 +222,7 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
                             ax_cwt2.yaxis.set_minor_formatter(FormatStrFormatter('%g'))
                         cbar = fig_cwt.colorbar(pos, ax=ax_cwt2)
                         cbar.minorticks_on()
-                        fig_cwt.tight_layout()
+                        #fig_cwt.tight_layout()
                         plt.show()
                 else:
                     _events.append(_f.result())
@@ -227,9 +248,10 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
                     else:
                         selected_events.append([np.array(_island[np.argmax(_island['coeff'])]) for _island in _islands])
                 selected_events = np.concatenate(tuple(selected_events), axis=0)
-                selected_events = [spectral_cluster(_island) for _island in detect_islands(selected_events, selectivity)]
-                # selected_events = filter_events(selected_events, selectivity=selectivity, refine=refine)
-                selected_events = np.concatenate(tuple(selected_events), axis=0)
+                if len(wavelets.keys()) > 1:
+                    selected_events = [spectral_cluster(_island) for _island in detect_islands(selected_events, selectivity)]
+                    # selected_events = filter_events(selected_events, selectivity=selectivity, refine=refine)
+                    selected_events = np.concatenate(tuple(selected_events), axis=0)
                 # total = len(wavelets.keys())
                 # n, t0 = 0, time.time()
                 # progress(n,total,status=f'filtering events, remaining time: ...',length=50)
@@ -284,7 +306,7 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
                 ax_hist[2].hist([selected_events[selected_events['name']==n]['time'] for n,k in enumerate(wavelets.keys())], stacked=True, label=list(wavelets.keys()), rwidth=0.9)
                 ax_hist[2].set_title(filename.split('/')[-1])
                 ax_hist[2].set_xlabel('Time [s]')
-                ax_hist[2].set_ylabel(f"events/{(selected_events['time'][-1]-selected_events['time'][0])/10:.3f} [s]")
+                ax_hist[2].set_ylabel(f"Events/{(selected_events['time'][-1]-selected_events['time'][0])/10:.3f} [s]")
                 ax_hist[2].legend()
                 fig_hist.tight_layout()
                 if save:
@@ -297,4 +319,6 @@ def analyze_trace(filename, wavelets, scales, xlim, resolution, thresh, selectiv
                 # _events_avg = np.mean([signal['count'][_loc[n]-] for n,e in enumerate(selected_events)])
                 # freq = np.fft.fftshift(np.fft.fftfreq(len(w)))[int(len(w)/2):]
                 # FFT_w = np.abs(np.fft.fftshift(np.fft.fft(w))[int(len(w)/2):])
+    if len(selected_events) == 0:
+        selected_events = np.empty((0,), dtype=d_type)
     return selected_events

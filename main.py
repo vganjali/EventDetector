@@ -18,20 +18,20 @@ def progress(count, total, title='', status='', length=50):
 def main():
     scale = [0.1e-3, 1.0e-3, 30]    # dt ranges used for scaling wavelets [min, max, count]
     log = True                      # linear/logarthmic range for dt
-    xlim = [0, -1]                  # time window to do analysis in [s]. [0,-1] means the entire trace
+    xlim = [26, 34]                  # time window to do analysis in [s]. [0,-1] means the entire trace
     resolution = 10                 # number of points to consider for minimum dt as the binning size
-    refine = True                   # refine initial local maximas using Euclidean Distance
+    refine = False                   # refine initial local maximas using Euclidean Distance
     plot = True                     # show the output plot, including trace and detected events in time-scale space
-    cwt_plot = False                # show CWT colorplot (for long traces will slow down significantly!)
-    save = True                     # save the detected events (and plots) into the .hdf5 file
+    cwt_plot = True                # show CWT colorplot (for long traces will slow down significantly!)
+    save = False                     # save the detected events (and plots) into the .hdf5 file
     image_format = 'tiff'
-    thresh = 10                      # threshold value used to detect events
+    thresh = 4                      # threshold value used to detect events
     # dirname = 'G:/My Drive/PhD/experiments/APD_Traces/Gopi/Gopi_plasmids_Dec_2019/2019-11-22 [TC7 D9 GB 200nm bead testing]/'                    # directory of the .ptu files
     # dirname = 'G:/My Drive/PhD/experiments/APD_Traces/Gopi/Gopi_plasmids_Dec_2019/2019-10-30 [KPC VIM NDM BYU prep plasmid TC7 G]/'
     # dirname = 'C:/Users/vg88/Dropbox/Codes/Python/'
-    dirname = 'D:/Experiments/Gopi/New folder/'
-    # filenames = ['default_004']
-    filenames = ['default_004','default_005','default_006']     # list of .ptu files to analyze
+    dirname = '/home/vahid/Downloads/'
+    filenames = ['default_000']
+    #filenames = ['default_004','default_005','default_006']     # list of .ptu files to analyze
     globRes = 250e-12               # globRes of T2 traces
     selectivity = 3                 # how selectively it should detect events
     chunksize = 100000              # chunksize used to split the binned trace to process in parallel
@@ -46,12 +46,12 @@ def main():
                 #       'wavelets': [wlts.mmi_gaussian_skewed(s, 2, window=1, weight=1, mod=0.6, shift=1, dt=dt) for s in scales]},
                 # '3p':{'N': 3, \
                 #       'wavelets': [wlts.mmi_gaussian_skewed(s, 3, window=1, weight=1, mod=0.6, shift=1, dt=dt) for s in scales]},
-                'CH1':{'N': 11, \
-                      'wavelets': [wlts.mmi_gaussian_skewed(s, 11, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
+                #'CH1':{'N': 11, \
+                      #'wavelets': [wlts.mmi_gaussian_skewed(s, 11, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
                 # 'CH1_1':{'N': 12, \
                 #       'wavelets': [wlts.mmi_gaussian_skewed(s, 12, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
-                'CH2':{'N': 8, \
-                      'wavelets': [wlts.mmi_gaussian_skewed(s, 8, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
+                #'CH2':{'N': 8, \
+                      #'wavelets': [wlts.mmi_gaussian_skewed(s, 8, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
                 # 'CH2_1':{'N': 9, \
                 #       'wavelets': [wlts.mmi_gaussian_skewed(s, 9, window=1, weight=1, mod=0.6, shift=1, skewness=0.4, dt=dt) for s in scales]},
                 'CH3':{'N': 5, \
@@ -106,10 +106,10 @@ def main():
     n, t0 = 0, time.time()
     for f in filenames:
         print(f'\n>> analyzing {f}')
-        events_len = len(mpf.analyze_trace(dirname+f, wavelets, scales, xlim, resolution, thresh, selectivity, chunksize, log=log, refine=refine, save=save, plot=plot, cwt_plot=cwt_plot, image_fmt=image_format))
+        events = mpf.analyze_trace(dirname+f, wavelets, scales, xlim, resolution, thresh, selectivity, chunksize, log=log, refine=refine, save=save, plot=plot, cwt_plot=cwt_plot, image_fmt=image_format)
         n += 1
         rem_time = int((total-n)*(time.time()-t0)/n)
-        progress(n,total,status=f'{f}: {events_len} event(s) detected, remaining time:{rem_time:.0f} [s]',length=30)
+        progress(n,total,status=f"{f}: {np.count_nonzero(events['name']!=-1)} event(s) detected, remaining time:{rem_time:.0f} [s]",length=30)
     print(f"\n>> finished in {time.time()-t0:.2f} [s]")
     if plot:
         plt.ioff()
