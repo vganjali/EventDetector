@@ -132,13 +132,13 @@ def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt,
         for i,k in enumerate(wavelets.keys()):
             if np.iscomplexobj(wavelets[k]['wavelets']):
                 for n, w in enumerate(wavelets[k]['wavelets']):
-                _cwt = np.abs(np.correlate(signal, w, mode='same')*np.sqrt(dt))[pad:-pad]
-                _index, _ = find_peaks(_cwt, distance=wavelets[k]['N']*scales[n]/dt, height=thresh)
-                _events = np.append(_events, np.array(list(zip((slice_l+_index)*dt, \
-                                                                [scales[n]]*len(_index), \
-                                                                _cwt[_index], \
-                                                                [wavelets[k]['N']]*len(_index), \
-                                                                [i]*len(_index))), dtype=d_type), axis=0)
+                    _cwt = np.abs(np.correlate(signal, w, mode='same')*np.sqrt(dt))[pad:-pad]
+                    _index, _ = find_peaks(_cwt, distance=wavelets[k]['N']*scales[n]/dt, height=thresh)
+                    _events = np.append(_events, np.array(list(zip((slice_l+_index)*dt, \
+                                                                    [scales[n]]*len(_index), \
+                                                                    _cwt[_index], \
+                                                                    [wavelets[k]['N']]*len(_index), \
+                                                                    [i]*len(_index))), dtype=d_type), axis=0)
             else:
                 for n, w in enumerate(wavelets[k]['wavelets']):
                     _cwt = (0.5*np.correlate(signal, w, mode='same')*np.sqrt(dt))[pad:-pad]
