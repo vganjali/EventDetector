@@ -130,7 +130,7 @@ def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt,
             # plt.show()
     else:
         for i,k in enumerate(wavelets.keys()):
-            if np.iscomplexobj(wavelets[k]['wavelets']):
+            if np.iscomplexobj(wavelets[k]['wavelets'][0]):
                 for n, w in enumerate(wavelets[k]['wavelets']):
                     _cwt = np.abs(np.correlate(signal, w, mode='same')*np.sqrt(dt))[pad:-pad]
                     _index, _ = find_peaks(_cwt, distance=wavelets[k]['N']*scales[n]/dt, height=thresh)
