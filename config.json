@@ -1,0 +1,85 @@
+{
+    "binsize": 1e-05,
+    "currentdir": "C:/Users/vahid/Downloads/",
+    "cwt": {
+        "chunksize": 100000,
+        "extent": 1,
+        "log": true,
+        "refine": true,
+        "resolution": 5,
+        "scales": {
+            "count": 30,
+            "max": 0.0015,
+            "min": 0.0001
+        },
+        "selectivity": 3,
+        "threshold": 5,
+        "window": {
+            "l": 7.983319734683478,
+            "r": 8.190138410678575
+        }
+    },
+    "targets": {
+        "active": [
+            true,
+            true,
+            true
+        ],
+        "color": [
+            "rgb(255, 0, 0)",
+            "rgb(85, 255, 0, 255)",
+            "rgb(0, 170, 255, 255)"
+        ],
+        "concentration": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "name": [
+            "7p",
+            "8p",
+            "9p"
+        ],
+        "note": [
+            "",
+            "",
+            ""
+        ],
+        "size": [
+            0.1,
+            0.1,
+            0.1
+        ],
+        "wavelet": {
+            "name": [
+                "Multi-Spot Gaussian",
+                "Multi-Spot Gaussian",
+                "Multi-Spot Gaussian"
+            ],
+            "parameters": [
+                {
+                    "N": 7,
+                    "mod": 0.5,
+                    "shift": 0.5,
+                    "skewness": 1.0
+                },
+                {
+                    "N": 8,
+                    "mod": 0.5,
+                    "shift": 0.5,
+                    "skewness": 1.0
+                },
+                {
+                    "N": 9,
+                    "mod": 0.5,
+                    "shift": 0.5,
+                    "skewness": 1.0
+                }
+            ]
+        }
+    },
+    "window": [
+        0.0,
+        0.0
+    ]
+}
