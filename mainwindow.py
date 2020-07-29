@@ -479,7 +479,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.comboBox_wavelet.sizePolicy().hasHeightForWidth())
         self.comboBox_wavelet.setSizePolicy(sizePolicy)
-        [self.comboBox_wavelet.addItem(w) for w in ['Multi-Spot Gaussian', 'Morlet', 'Morlet_Complex', 'Ricker']]
+        [self.comboBox_wavelet.addItem(w) for w in ['Multi-spot Gaussian', 'Multi-spot Gaussian (encoded)','Morlet', 'Morlet_Complex', 'Ricker']]
 
         self.gridLayout_waveletparameters.addWidget(self.comboBox_wavelet, 1, 1, 1, 1)
 
@@ -1078,6 +1078,7 @@ class Ui_MainWindow(object):
         if filename[0] is not '':
             with open(filename[0], 'r') as cf:
                 self.params = json.load(cf)
+                self.load_params()
     def config_save(self):
         with open('config.json', 'w') as cf:
             json.dump(self.params, cf, sort_keys=True, indent=4)
@@ -1095,6 +1096,7 @@ class Ui_MainWindow(object):
         self.params['cwt']['selectivity'] = self.doubleSpinBox_selectivity.value()
         self.params['cwt']['extent'] = self.doubleSpinBox_extent.value()
         print(self.params['cwt'])
+
     def load_params(self):
         self.doubleSpinBox_scales_min.setValue(self.params['cwt']['scales']['min']*1e3)
         self.doubleSpinBox_scales_max.setValue(self.params['cwt']['scales']['max']*1e3)
@@ -1129,8 +1131,8 @@ class Ui_MainWindow(object):
             'active':True,
             'note':'',
             'wavelet':{
-                'name':self.comboBox_wavelet.currentText(),
-                'parameters':{'N':6,'mod':0.5,'shift':1,'skewness':0.5}
+                'name':'Multi-spot Gaussian',
+                'parameters':{'N':6, 'pattern':'6', 'mod':0.5,'shift':1,'skewness':0.5}
             }
         }
         for key,value in default.items():
@@ -1163,7 +1165,7 @@ class Ui_MainWindow(object):
     def target_load(self,item):
         if item.data() in self.params['targets']['name']:
             n = item.row()
-            print(n)
+            # print(n)
             self.pushButton_targetcolor.setStyleSheet(f"background-color: {self.params['targets']['color'][n]};\n"
 "border: none;")
             self.doubleSpinBox_targetconcentration.setValue(self.params['targets']['concentration'][n])
@@ -1195,24 +1197,34 @@ class Ui_MainWindow(object):
     def wavelet_load(self,*sig):
         import wavelet as wlt
         n = self.comboBox_target.currentIndex()
-        self.comboBox_wavelet.setCurrentText(self.params['targets']['wavelet']['name'][n])
-        self.lineEdit_N.setText(str(self.params['targets']['wavelet']['parameters'][n]['N']))
+        # print(n)
+        self.lineEdit_N.setText(self.params['targets']['wavelet']['parameters'][n]['pattern'])
         self.doubleSpinBox_mod.setValue(self.params['targets']['wavelet']['parameters'][n]['mod'])
         self.doubleSpinBox_shift.setValue(self.params['targets']['wavelet']['parameters'][n]['shift'])
         self.doubleSpinBox_skewness.setValue(self.params['targets']['wavelet']['parameters'][n]['skewness'])
+        self.comboBox_wavelet.currentTextChanged.disconnect()
+        self.comboBox_wavelet.setCurrentText(self.params['targets']['wavelet']['name'][n])
         self.wavelet_update()
+        self.comboBox_wavelet.currentTextChanged.connect(self.wavelet_update)
 
     def wavelet_update(self,*sig):
         import wavelet as wlt
         n = self.comboBox_target.currentIndex()
         wavelet_name = self.comboBox_wavelet.currentText()
-        N = int(self.lineEdit_N.text())
+        pattern = self.lineEdit_N.text()
+        if wavelet_name == 'Multi-spot Gaussian (encoded)':
+            N = len(pattern)
+        else:
+            N = int(pattern)
+        if N > 10:
+            print('N is too big')
+            return
         mod = self.doubleSpinBox_mod.value()
         shift = self.doubleSpinBox_shift.value()
         skewness = self.doubleSpinBox_skewness.value()
         self.params['targets']['wavelet']['name'][n] = wavelet_name
-        self.params['targets']['wavelet']['parameters'][n] = {'N':N, 'mod':mod, 'shift':shift, 'skewness':skewness}
-        wavelet = getattr(wlt, wavelet_name.lower().replace('-','_').replace(' ','_'))(N=N,mod=mod,shift=shift,skewness=skewness)
+        self.params['targets']['wavelet']['parameters'][n] = {'N':N, 'pattern':pattern, 'mod':mod, 'shift':shift, 'skewness':skewness}
+        wavelet = getattr(wlt, wavelet_name.lower().replace('-','_').replace(' ','_').replace('(','').replace(')',''))(N=N,pattern=pattern,mod=mod,shift=shift,skewness=skewness)
         if np.iscomplexobj(wavelet):
             self.waveletplot_line.plot(np.real(wavelet),pen=pg.mkPen(width=1,color='k'),clear=True)
             self.waveletplot_line.plot(np.imag(wavelet),pen=pg.mkPen(width=1,color=(30,30,30),style=QtCore.Qt.DashLine))
@@ -1230,7 +1242,7 @@ class Ui_MainWindow(object):
         import pandas as pd
         self.canvas_plotsummary.figure.clf()
         self.gs_summaryplot = self.canvas_plotsummary.figure.add_gridspec(3, 2, height_ratios=[1,2,2])
-        self.ax_plotcounts = self.canvas_plotsummary.figure.add_subplot(self.gs_summaryplot[0,1])
+        self.ax_plotcounts = self.canvas_plotsummary.figure.add_subplot(self.gs_summaryplot[0,:])
         self.ax_rate = self.canvas_plotsummary.figure.add_subplot(self.gs_summaryplot[1,:])
         self.ax_velocity = self.canvas_plotsummary.figure.add_subplot(self.gs_summaryplot[2,:])
         names = self.params['targets']['name']
@@ -1241,26 +1253,19 @@ class Ui_MainWindow(object):
         # print(df.describe())
         _counts = []
         colors = []
-        text = [{}]*len(names)
+        ticks = ['']*len(names)
         for n,c in enumerate(self.params['targets']['color']):
             colors.append([float(c)/255 for c in eval(c.split('rgb')[1])])
-            _counts.append(np.count_nonzero(events['name'] == n))
-        for n,c in enumerate(_counts):
-            if float(c)/max(_counts) > 0.5:
-                text[n]['color'] = 'white' if colors[n][0]*colors[n][1]*colors[n][2] < 0.5 else 'black'
-                text[n]['ha'] = 'right'
-                text[n]['x'] = c
-            else:
-                text[n]['color'] = 'black'
-                text[n]['ha'] = 'left'
-                text[n]['x'] = c
+            _counts.append(np.count_nonzero(events['label'] == n))
+        for n,name in enumerate(names):
+            ticks[n] = f'{name} [{_counts[n]}]'
 
         self.ax_plotcounts.barh(range(len(_counts)), _counts, align='center', color=colors)
-        [self.ax_plotcounts.text(y=y, s=str(c), va='center', **text[y]) for y,c in enumerate(_counts)]
+        # [self.ax_plotcounts.text(y=y, s=f' {c} ', va='center', bbox=dict(boxstyle="round",ec=(0., 0., 0.),fc=(0., 0., 0.)), **text[y]) for y,c in enumerate(_counts)]
         self.ax_plotcounts.set_yticks(range(len(_counts)))
-        self.ax_plotcounts.set_yticklabels(names)
+        self.ax_plotcounts.set_yticklabels(ticks)
         self.ax_plotcounts.set_xlabel('Count')
-        self.ax_rate.hist([events[events['name']==n]['time'] for n in range(len(_counts))], rwidth=0.8, 
+        self.ax_rate.hist([events[events['label']==n]['time'] for n in range(len(_counts))], rwidth=0.8, 
                             bins=20, density=False, histtype='bar', stacked=True, color=colors, label=names)
         self.ax_rate.set_xlabel('Time [s]')
         self.ax_rate.set_ylabel(f"Events/{(np.max(events['time'])-np.min(events['time']))/20:.3f}")
@@ -1284,24 +1289,24 @@ class Ui_MainWindow(object):
         self.canvas_plotsummary.draw()
     
     def gen_dist(self,events):
-        import pandas as pd
-        import seaborn as sns
+        # import pandas as pd
+        # import seaborn as sns
         self.canvas_plotdist.figure.clf()
         self.canvas_plotjointdist.figure.clf()
         self.ax_dist = self.canvas_plotdist.figure.subplots(2,1)
         # self.df = pd.DataFrame(events)
         # self.df['velocity'] = 5e-6/self.df['scale']*1e2
         # self.df['intensity'] = self.df['coeff']
-        self.df['class'] = self.df['name']
+        # self.df['class'] = self.df['label']
         self.df['scale'] = self.df['scale']*1e3
-        self.df['name'] = np.array(self.params['targets']['name'])[self.df['name']]
+        self.df['label'] = np.array(self.params['targets']['name'])[self.df['label']]
         colors = []
         names = self.params['targets']['name']
         for n,c in enumerate(self.params['targets']['color']):
             colors.append([float(c)/255 for c in eval(c.split('rgb')[1])])
-        self.ax_dist[0].hist([self.df[self.df['class']==n]['intensity'] for n in range(len(names))], rwidth=0.8, 
+        self.ax_dist[0].hist([self.df[self.df['label']==n]['intensity'] for n in range(len(names))], rwidth=0.8, 
                         bins=20, density=False, histtype='bar', stacked=False, color=colors, label=names)
-        self.ax_dist[1].hist([self.df[self.df['class']==n]['velocity'] for n in range(len(names))], rwidth=0.8, 
+        self.ax_dist[1].hist([self.df[self.df['label']==n]['velocity'] for n in range(len(names))], rwidth=0.8, 
                         bins=20, density=False, histtype='bar',stacked=False, color=colors, label=names)
         self.ax_dist[0].set_xlabel('Intensity [a.u.]')
         self.ax_dist[1].set_xlabel('Velocity [cm/s]')
@@ -1309,9 +1314,9 @@ class Ui_MainWindow(object):
         self.ax_dist[1].legend()
         self.ax_scatter = self.canvas_plotjointdist.figure.subplots()
         if self.params['cwt']['log']:
-            xbins = np.logspace(np.log10(self.params['cwt']['scales']['min']), np.log10(self.params['cwt']['scales']['max']), self.params['cwt']['scales']['count'], dtype=np.float64)
+            xbins = np.logspace(np.log10(self.params['cwt']['scales']['min']*1e3), np.log10(self.params['cwt']['scales']['max']*1e3), self.params['cwt']['scales']['count'], dtype=np.float64)
         else:
-            xbins = np.linspace(self.params['cwt']['scales']['min'], self.params['cwt']['scales']['max'], self.params['cwt']['scales']['count'], dtype=np.float64)
+            xbins = np.linspace(self.params['cwt']['scales']['min']*1e3, self.params['cwt']['scales']['max']*1e3, self.params['cwt']['scales']['count'], dtype=np.float64)
         # hist, xbins = np.histogram(self.df['scale'], bins=self.params['cwt']['scales']['count'])
         # xlogbins = np.logspace(np.log10(xbins[0]),np.log10(xbins[-1]),len(xbins))
         hist, ybins = np.histogram(self.df['intensity'], bins=self.params['cwt']['scales']['count'])
@@ -1333,10 +1338,14 @@ class Ui_MainWindow(object):
 
     def save_events(self,events):
         if events is not None:
-            filename = QFileDialog.getSaveFileName(None,'Save Events As', self.params['currentdir'], 'Numpy Array (*.npy)')
-            if filename[0] is not '':
-                with open(filename[0], 'wb') as f:
-                    np.save(f, events)
+            filename = QFileDialog.getSaveFileName(None,'Save Events As', self.params['currentdir'], 'Numpy Array (*.npy);;CSV (*.csv)')[0]
+            if filename is not '':
+                if os.path.splitext(filename)[1] == 'npy':
+                    with open(filename, 'wb') as f:
+                        np.save(f, events)
+                else:
+                    with open(filename, 'wb') as f:
+                        np.savetxt(f, events, delimiter=',', comments='', header=','.join(events.dtype.names))
 
 class Events_Model(QAbstractTableModel):
     def __init__(self, data):

@@ -42,35 +42,6 @@ def morlet_complex(scale=10, N=6, window=1, mod=None, shift=None, skewness=None,
     s_square_norm = np.trapz(np.abs(s)**2, dx=1)
     return s/np.sqrt(s_square_norm)
 
-def mmi_gaussian(scale=10, N=6, window=1, weight=1, mod=0.5, shift=1, dt=1):
-    resolution = scale/dt
-    sigma = resolution/4.29193*mod
-    if (type(N) == list):
-        if ((type(weight) == list) and (len(N) != len(weight))):
-            print('weight and N lists should have equal length')
-            return
-        elif ((type(weight) == float) or (type(weight) == int)):
-            weight = [weight]*len(N)
-        N_max = max(N)
-    else:
-        N_max = N
-    length = int(N_max*resolution + shift*resolution + 5*N_max*window*sigma)
-    t = np.arange(length)
-    s = np.zeros((length,))
-    if (type(N) == list):
-        for i,n in enumerate(N):
-            for m in range(n):
-                s += weight[i]*np.exp(-(t-length/2+((n-1)/2-m)*(N_max/n)*resolution)**2/(2*(sigma*N_max/n)**2))
-    else:
-        for m in range(N):
-            s += weight*np.exp(-(t-length/2+((N_max-1)/2-m)*resolution)**2/(2*(sigma)**2))
-    s -= np.amax(s)/window*np.exp(-(t-length/2+(N_max/2+shift/2)*resolution)**2/(2*(N_max/2*window*sigma)**2))
-    s -= np.amax(s)/window*np.exp(-(t-length/2-(N_max/2+shift/2)*resolution)**2/(2*(N_max/2*window*sigma)**2))
-    s -= np.mean(s)
-    s_square_norm = np.trapz(s**2, dx=dt)
-    s = s/np.sqrt(s_square_norm)
-    return s
-
 def skew_normal(x, mu, sigma, alpha=0):
     # mean = mu - sigma*alpha/np.sqrt(1+alpha**2)*np.sqrt(2/np.pi)
     delta = alpha/(np.sqrt(1+alpha**2))
@@ -87,7 +58,8 @@ def skew_normal(x, mu, sigma, alpha=0):
     _PHI = 1/2*(1+erf(alpha*(x-xi)/sigma/np.sqrt(2)))
     return 2/sigma*phi*_PHI
 
-def multi_spot_gaussian(scale=10, N=6, window=1, mplx_ratio=1, weight=1, mod=0.5, shift=1, skewness=1, is_complex=False, dt=1, mf=False):
+def multi_spot_gaussian(scale=10, N=6, pattern='6', window=1, mplx_ratio=1, weight=1, mod=0.5, shift=1, skewness=1, is_complex=False, dt=1, mf=False):
+    N = int(N)
     if (type(N) != list):
         N = [N]
     if ((type(mplx_ratio) == float) or (type(mplx_ratio) == int)):
@@ -128,6 +100,50 @@ def multi_spot_gaussian(scale=10, N=6, window=1, mplx_ratio=1, weight=1, mod=0.5
     if not mf:
         s -= np.sum(weight)/2*skew_normal(t, length/2+(N_max/2+shift/2)*resolution, (1+4*skewness)*N_max/2*window*sigma, alpha=4*skewness*N_max/2*window)
         s -= np.sum(weight)/2*skew_normal(t, length/2-(N_max/2+shift/2)*resolution, (1+4*skewness)*N_max/2*window*sigma, alpha=-4*skewness*N_max/2*window)
+        s -= np.mean(s)
+    s_square_norm = np.trapz(np.abs(s)**2, dx=1)
+    s = s/np.sqrt(s_square_norm)
+#     s = s/np.sqrt(scale)
+    return s
+
+def multi_spot_gaussian_encoded(scale=10, N=4, pattern='1201', window=1, mod=0.5, shift=1, skewness=1, is_complex=False, dt=1, mf=False):
+    if (type(N) != list):
+        N = [N]
+    if (type(pattern) != list):
+        pattern = [pattern]
+    for i,n in enumerate(pattern):
+        pattern[i] = [float.fromhex('0x'+p) for p in pattern[i]]
+    # if (len(N) < 2):
+    #     print('Please define code by Hex numbers: i.e. 1a30e')
+    #     return
+    N_max = max(N)
+#     mod *= (4.29193/2.35482)
+    skewness *= 1.2*mod
+    resolution = scale/dt
+    sigma = resolution/4.29193*mod*N_max/8
+#     amp = np.array([3,4,3,2,4,3,3,3])
+#     amp = amp[::-1]/np.sum(amp)*N_max
+    # sigma = resolution/4*mod
+    length = int(N_max*resolution + shift*resolution + (1+4*skewness)*5*N_max*window*sigma)
+    t = np.arange(length)
+    if is_complex:
+        s = np.zeros((length,),dtype=np.complex)
+        for i,n in enumerate(N):
+            for m in range(n):
+                s += float.fromhex('0x'+n[m])*skew_normal(t,length/2+((n-1)/2-m+0.125)*(N_max/n)*resolution,sigma, alpha=0)
+                s += 1j*skew_normal(t,length/2+((n-1)/2-m-0.125)*(N_max/n)*resolution,sigma, alpha=0)
+        s -= 1/2*skew_normal(t, length/2+(N_max/2+shift/2+0.125)*resolution, (1+4*skewness)*N_max/2*window*sigma, alpha=4*skewness*N_max/2*window)
+        s -= 1j/2*skew_normal(t, length/2+(N_max/2+shift/2-0.125)*resolution, (1+4*skewness)*N_max/2*window*sigma, alpha=4*skewness*N_max/2*window)
+        s -= 1/2*skew_normal(t, length/2-(N_max/2+shift/2-0.125)*resolution, (1+4*skewness)*N_max/2*window*sigma, alpha=-4*skewness*N_max/2*window)
+        s -= 1j/2*skew_normal(t, length/2-(N_max/2+shift/2+0.125)*resolution, (1+4*skewness)*N_max/2*window*sigma, alpha=-4*skewness*N_max/2*window)
+    else:
+        s = np.zeros((length,))
+        for i,n in enumerate(N):
+            for m in range(n):
+                s += pattern[i][m]*skew_normal(t,length/2-((n-1)/2-m)*(N_max/n)*resolution,sigma, alpha=0)
+    if not mf:
+        s -= np.sum(pattern)/2*skew_normal(t, length/2+(N_max/2+shift/2)*resolution, (1+4*skewness)*N_max/2*window*sigma, alpha=4*skewness*N_max/2*window)
+        s -= np.sum(pattern)/2*skew_normal(t, length/2-(N_max/2+shift/2)*resolution, (1+4*skewness)*N_max/2*window*sigma, alpha=-4*skewness*N_max/2*window)
         s -= np.mean(s)
     s_square_norm = np.trapz(np.abs(s)**2, dx=1)
     s = s/np.sqrt(s_square_norm)

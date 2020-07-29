@@ -14,7 +14,7 @@ import h5py as h5py
 import sys as sys
 from PySide2.QtCore import Signal, Slot, QObject
 
-d_type = np.dtype([('time', 'f8'), ('scale', 'f8'), ('coeff', 'f8'), ('N', 'f8'), ('name', 'i8')])
+d_type = np.dtype([('time', 'f8'), ('scale', 'f8'), ('coeff', 'f8'), ('N', 'f8'), ('label', 'i8')])
 
 def spectral_cluster_2(all_events, threshold, selectivity=1, plot=False):
     _points = np.array(list(zip(all_events['time'],all_events['scale'])))
@@ -37,7 +37,7 @@ def spectral_cluster_2(all_events, threshold, selectivity=1, plot=False):
         a.imshow(_mask)
         f.savefig(f"adj1_{all_events['time'][0]:0.4f}.svg")
     for f in np.argwhere(np.sum(_mask,axis=0) == 1).flatten():
-        all_events[f]['name'] = -1
+        all_events[f]['label'] = -1
     _degree_sort = np.argsort(np.sum(_adjacency,axis=0))
     all_events = all_events[_degree_sort]
     _adjacency = _adjacency[_degree_sort,:]
@@ -81,7 +81,7 @@ def spectral_cluster(all_events, threshold, selectivity=1, plot=False):
         a.imshow(_mask)
         f.savefig(f"adj1_{all_events['time'][0]:0.4f}.svg")
     for f in np.argwhere(np.sum(_mask,axis=0) == 1).flatten():
-        all_events[f]['name'] = -1
+        all_events[f]['label'] = -1
     _degree_sort = np.argsort(np.sum(_adjacency,axis=0))
     all_events = all_events[_degree_sort]
     _adjacency = _adjacency[_degree_sort,:]
@@ -306,9 +306,9 @@ class eventdetector(QObject):
     #             return _events
                 if len(_events) > 0:
                     for i,k in enumerate(wavelets.keys()):
-                        if (np.count_nonzero(_events['name']==i) == 0):
+                        if (np.count_nonzero(_events['label']==i) == 0):
                             break
-                        _islands = detect_islands(_events[_events['name'] == i],self.threshold)
+                        _islands = detect_islands(_events[_events['label'] == i],self.threshold)
                         n, total = 0, len(_islands)
                         if self.refine:
     #                         _futures = [e.submit(spectral_cluster,_island,thresh,selectivity,cwt_plot) for _island in _islands]

@@ -6,6 +6,7 @@ import ptu
 import wavelet
 import eventdetector
 import threading
+import multiprocessing
 from concurrent.futures import ProcessPoolExecutor as Executor
 from concurrent.futures import as_completed
 
@@ -97,7 +98,7 @@ class MainWindow(QMainWindow):
 				wname = self.ui.params['targets']['wavelet']['name'][n]
 				args = self.ui.params['targets']['wavelet']['parameters'][n]
 				_wavelets[name] = {'N': args['N'],
-				'wavelets': [getattr(wavelet, wname.lower().replace('-','_').replace(' ','_'))(s, dt=_dt, **args) for s in scales]}
+				'wavelets': [getattr(wavelet, wname.lower().replace('-','_').replace(' ','_').replace('(','').replace(')',''))(s, dt=_dt, **args) for s in scales]}
 		return _wavelets
 
 	def update_statusbar(self, signal):
@@ -183,7 +184,7 @@ class MainWindow(QMainWindow):
 		events.sort(order='time')
 		for n,c in enumerate(self.ui.params['targets']['color']):
 			self.ui.scatter_events[self.ui.params['targets']['name'][n]] = \
-				pg.ScatterPlotItem(events[events['name']==n]['time'],np.log10(events[events['name']==n]['scale']*1e3),
+				pg.ScatterPlotItem(events[events['label']==n]['time'],np.log10(events[events['label']==n]['scale']*1e3),
 				symbol='s',pen=pg.mkPen(color=eval(c.split('rgb')[-1]),width=2),brush=None,pxMode=True, size=10, 
 				name=self.ui.params['targets']['name'][n])
 			self.ui.scatter_events[self.ui.params['targets']['name'][n]].setZValue(99)
@@ -205,6 +206,8 @@ class MainWindow(QMainWindow):
 		# [self.ui.image_cwt_ax.addItem(self.ui.scatter_events[k]) for k in self.ui.scatter_events.keys()]
 
 if __name__ == '__main__':
+	if sys.platform.startswith('win'):
+		multiprocessing.freeze_support()
 	app = QApplication(sys.argv)
 
 	main_window = MainWindow()
