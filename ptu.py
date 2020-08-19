@@ -19,7 +19,7 @@ class ptu(QObject):
 		self.buffer = 100000
 		self.globres = 250e-12
 		self.queue = queue.Queue(maxsize=20)
-		self.rt_active = False
+		self.active = False
 		self.update_interval = 50 #ms
 		self.updateplot_timer.setInterval(self.update_interval)
 
@@ -45,7 +45,7 @@ class ptu(QObject):
 				# print(os.path.getsize(self.filename))
 				progress_total = os.path.getsize(self.filename)/(self.buffer*4)+1
 				progress_current = 0
-				while self.timeout > 0:
+				while (self.timeout > 0) and self.active:
 					try:
 						records = np.frombuffer(f_mmap,dtype=np.uint32,count=self.buffer,offset=offset)
 						special = np.bitwise_and(np.right_shift(records,31), 0x01).astype(np.byte)
@@ -74,6 +74,9 @@ class ptu(QObject):
 						if (len(f_mmap[offset:])/4 < self.buffer):
 							self.buffer = int(len(f_mmap[offset:])/4)
 						self.timeout -= 1
+				if not self.active:
+					self.started.emit(False)
+					return
 			ds_count[bin_edge['time']] = bin_edge['count']
 			ds_time.resize((ds_count.size,))
 			ds_time[:] = np.arange(0, self.binsize*1e12*ds_time.size, self.binsize*1e12, dtype=np.uint64)
@@ -97,7 +100,7 @@ class ptu(QObject):
 			f_mmap = mmap.mmap(fin.fileno(),0,access=mmap.ACCESS_READ)
 			offset = int(f_mmap.find(str.encode('Header_End'))+48)
 			# print(os.path.getsize(self.filename))
-			while self.rt_active:
+			while self.active:
 				try:
 					records = np.frombuffer(f_mmap,dtype=np.uint32,count=self.buffer,offset=offset)
 				except Exception as e:

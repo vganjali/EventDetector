@@ -12,8 +12,15 @@ from PySide2.QtWidgets import (QSplashScreen, QMainWindow, QApplication)
 from PySide2.QtCore import Qt
 # import pyqtgraph as pg
 # import vaex
+# import numpy as np
 # import h5py
-modules = {'mainwindow':'mw', 'ptu':'', 'wavelet':'', 'eventdetector':'ed', 'threading':'', 'pyqtgraph':'pg', 'numpy':'np'}
+# import pyqtgraph as pg
+# import mainwindow as mw
+# import ptu
+# import wavelet
+# import eventdetector as ed
+# import threading
+modules = {'mainwindow':'mw', 'ptu':'', 'wavelet':'', 'eventdetector':'ed', 'threading':'', 'pyqtgraph':'pg', 'numpy':'np', 'h5py':''}
 
 class MainWindow(QMainWindow):
 	def __init__(self):
@@ -47,14 +54,18 @@ class MainWindow(QMainWindow):
 			# self.ui.params['binsize'] = self.ui.doubleSpinBox_binsize.value()*1e-3
 			# self.ui.params['buffer'] = self.ui.spinBox_buffersize.value()*1024
 			if ((self.ui.params['currentdir']+filename.data() != self.ptufile.filename) or 
-				(self.ui.params['binsize'] != self.ptufile.binsize)):
+				(self.ui.params['binsize'] != self.ptufile.binsize)) and not self.read_file_thread.is_alive():
 				self.ptufile.filename = self.ui.params['currentdir']+filename.data()
 				self.ptufile.binsize = self.ui.params['binsize']
 				self.ptufile.buffer = int(self.ui.params['buffer']*1024*1024/4)
+				self.ptufile.active = True
 				self.read_file_thread = threading.Thread(target=self.ptufile.processHT2, args=(update,relim,),daemon=False)
 				# print(f"binning {ptufile.filename}")
 				self.ui.progressBar.reset()
 				self.read_file_thread.start()
+			elif self.read_file_thread.is_alive():
+				self.ptufile.active = False
+				self.statusBar().showMessage('Idle')
 		except Exception as e:
 			print(e)
 			pass
@@ -68,7 +79,7 @@ class MainWindow(QMainWindow):
 				self.ptufile.filename = self.ui.params['currentdir']+self.ui.lineEdit_filename.text()+'.ptu'
 				self.ptufile.binsize = self.ui.params['binsize']
 				self.ptufile.buffer = int(self.ui.params['buffer']*1024*1024/20/4)
-				self.ptufile.rt_active = True
+				self.ptufile.active = True
 				while not self.ptufile.queue.empty():
 					self.ptufile.queue.get()
 				self.ui.plot_line.setLabel('left',f"Intensity [cnts/{self.ptufile.binsize*1e3:g}ms]")
@@ -86,15 +97,17 @@ class MainWindow(QMainWindow):
 				self.read_file_thread.start()
 				self.ptufile.updateplot_timer.start()
 				self.ui.pushButton_realtime.setText('Stop')
+				self.ui.listWidget_files.setEnabled(False)
 				self.statusBar().showMessage('Realtime Plotting...')
 			else:
 				# print('stopped')
-				self.ptufile.rt_active = False
+				self.ptufile.active = False
 				self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=False)
 				self.ptufile.updateplot_timer.stop()
 				while not self.ptufile.queue.empty():
 					self.ptufile.queue.get()
 				self.ui.pushButton_realtime.setText('Start')
+				self.ui.listWidget_files.setEnabled(True)
 				self.statusBar().showMessage('Idle')
 			# self.plot_thread = threading.Thread(target=self.update_time_plot_worker, args=(),daemon=False).start()
 		except Exception as e:
@@ -102,7 +115,7 @@ class MainWindow(QMainWindow):
 			while not self.ptufile.queue.empty():
 				self.ptufile.queue.get()
 			self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=False)
-			self.ptufile.rt_active = False
+			self.ptufile.active = False
 
 
 
@@ -138,7 +151,6 @@ class MainWindow(QMainWindow):
 		# self.statusBar().showMessage('Idle')
 
 	def generate_wavelets(self):
-		import numpy as np
 		_wavelets = {}
 		_dt = self.ui.params['cwt']['scales']['min']/self.ui.params['cwt']['resolution']
 		if self.ui.params['cwt']['log']:
@@ -161,7 +173,6 @@ class MainWindow(QMainWindow):
 			self.statusBar().showMessage('Idle')
 
 	def update_time_plot(self,relim=False):
-		import h5py
 		self.statusBar().showMessage('Updating Plot')
 		with h5py.File(os.path.splitext(self.ptufile.filename)[0]+'.hdf5', 'r') as f:
 			self.ui.plot_line.disableAutoRange()
@@ -209,7 +220,6 @@ class MainWindow(QMainWindow):
 		# 	self.statusBar().showMessage('Idle')
 
 	def update_cwt_plot(self,cwt):
-		import numpy as np
 		if self.eventdetector.cwt_plot == True:
 			self.statusBar().showMessage('Updating CWT Plot')
 			self.ui.image_cwt_ax.disableAutoRange()
@@ -254,7 +264,6 @@ class MainWindow(QMainWindow):
 		self.statusBar().showMessage('Idle')
 		
 	def update_events(self, events):
-		import numpy as np
 		# print(events)
 		# colors = ['r','g','b']
 		events.sort(order='time')
