@@ -1,13 +1,13 @@
 import os, json
 from PySide2.QtCore import (QCoreApplication, QDate, QDateTime, QMetaObject,
-    QObject, QPoint, QRect, QSize, QTime, QUrl, QDir, Qt, QModelIndex, QAbstractTableModel)
+    QObject, QPoint, QRect, QRectF, QSize, QTime, QUrl, QDir, Qt, QModelIndex, QAbstractTableModel)
 from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
     QFontDatabase, QIcon, QKeySequence, QLinearGradient, QPalette, QPainter,
     QPixmap, QRadialGradient, QStandardItem, QStandardItemModel)
 from PySide2.QtWidgets import *
 
 from matplotlib.backends.qt_compat import QtCore, QtWidgets, is_pyqt5
-if is_pyqt5():
+if QtCore.qVersion():
     from matplotlib.backends.backend_qt5agg import (
         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 else:
@@ -72,7 +72,7 @@ class Ui_MainWindow(object):
         self.widget_plot_timetrace.addItem(self.plot_line)
         self.plot_line.setDownsampling(auto=True)
         self.plot_line.setClipToView(clip=True)
-        self.plot_line.setLabels(left='Intenisty [Counts/s]', bottom='Time [s]')
+        self.plot_line.setLabels(left='Intensity [Counts/s]', bottom='Time [s]')
         # self.plot_line.enableAutoRange(self.plot_line.vb.YAxis,True)
         self.plot_line.disableAutoRange()
 
@@ -124,7 +124,7 @@ class Ui_MainWindow(object):
         # self.scatter_events.setZValue(99)
         self.image_cwt_ax.setXLink(self.plot_line)
         self.image_cwt_ax.setLabels(left='Scale [ms]', bottom='Time [s]')
-        # self.image_cwt.setLabels(left='Intenisty [Counts/s]', bottom='Time [s]')
+        # self.image_cwt.setLabels(left='Intensity [Counts/s]', bottom='Time [s]')
         # self.image_cwt.disableAutoRange()
         # self.time_ax = MyStaticMplCanvas(MainWindow, width=5, height=4, dpi=100)
         self.splitter_plot.addWidget(self.widget_plot_timetrace)
@@ -589,13 +589,13 @@ class Ui_MainWindow(object):
         self.verticalLayout_analyze_cwt.setContentsMargins(4, 4, 4, 4)
         self.gridLayout_analyze_cwt = QGridLayout()
         self.gridLayout_analyze_cwt.setObjectName(u"gridLayout_analyze_cwt")
-        self.doubleSpinBox_selectivity = QDoubleSpinBox(self.groupBox_analyze_cwt)
-        self.doubleSpinBox_selectivity.setObjectName(u"doubleSpinBox_selectivity")
-        self.doubleSpinBox_selectivity.setMaximum(100.000000000000000)
-        self.doubleSpinBox_selectivity.setSingleStep(0.100000000000000)
-        self.doubleSpinBox_selectivity.setValue(self.params['cwt']['selectivity'])
+        self.spinBox_selectivity = QSpinBox(self.groupBox_analyze_cwt)
+        self.spinBox_selectivity.setObjectName(u"spinBox_selectivity")
+        self.spinBox_selectivity.setMaximum(100)
+        self.spinBox_selectivity.setSingleStep(1)
+        self.spinBox_selectivity.setValue(self.params['cwt']['selectivity'])
 
-        self.gridLayout_analyze_cwt.addWidget(self.doubleSpinBox_selectivity, 3, 2, 1, 1)
+        self.gridLayout_analyze_cwt.addWidget(self.spinBox_selectivity, 3, 2, 1, 1)
 
         self.doubleSpinBox_extent = QDoubleSpinBox(self.groupBox_analyze_cwt)
         self.doubleSpinBox_extent.setObjectName(u"doubleSpinBox_extent")
@@ -951,7 +951,7 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_scales_max.valueChanged.connect(self.update_params)
         self.spinBox_scales_count.valueChanged.connect(self.update_params)
         self.doubleSpinBox_threshold_cwt.valueChanged.connect(self.update_params)
-        self.doubleSpinBox_selectivity.valueChanged.connect(self.update_params)
+        self.spinBox_selectivity.valueChanged.connect(self.update_params)
         self.doubleSpinBox_extent.valueChanged.connect(self.update_params)
 
         self.pushButton_save_events.clicked.connect(lambda: self.save_events(self.eventsmodel._data))
@@ -962,7 +962,7 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Single Molecule Detection: Analysis", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Single Molecule Detection: CWT Analysis", None))
         self.actionLoad.setText(QCoreApplication.translate("MainWindow", u"Load", None))
         self.actionSave.setText(QCoreApplication.translate("MainWindow", u"Save", None))
         self.actionSave_As.setText(QCoreApplication.translate("MainWindow", u"Save As...", None))
@@ -1075,7 +1075,7 @@ class Ui_MainWindow(object):
             self.config_save()
     def config_load(self):
         filename = QFileDialog.getOpenFileName(None,'Load Configurations', self.params['currentdir'], 'JSON Files (*.json)')
-        if filename[0] is not '':
+        if filename[0] != '':
             with open(filename[0], 'r') as cf:
                 self.params = json.load(cf)
                 self.load_params()
@@ -1084,7 +1084,7 @@ class Ui_MainWindow(object):
             json.dump(self.params, cf, sort_keys=True, indent=4)
     def config_save_as(self):
         filename = QFileDialog.getSaveFileName(None,'Save Configurations As', self.params['currentdir'], 'JSON Files (*.json)')
-        if filename[0] is not '':
+        if filename[0] != '':
             with open(filename[0], 'w') as cf:
                 json.dump(self.params, cf, sort_keys=True, indent=4)
 
@@ -1093,7 +1093,7 @@ class Ui_MainWindow(object):
         self.params['cwt']['scales']['max'] = self.doubleSpinBox_scales_max.value()*1e-3
         self.params['cwt']['scales']['count'] = self.spinBox_scales_count.value()
         self.params['cwt']['threshold'] = self.doubleSpinBox_threshold_cwt.value()
-        self.params['cwt']['selectivity'] = self.doubleSpinBox_selectivity.value()
+        self.params['cwt']['selectivity'] = self.spinBox_selectivity.value()
         self.params['cwt']['extent'] = self.doubleSpinBox_extent.value()
         print(self.params['cwt'])
 
@@ -1102,7 +1102,7 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_scales_max.setValue(self.params['cwt']['scales']['max']*1e3)
         self.spinBox_scales_count.setValue(self.params['cwt']['scales']['count'])
         self.doubleSpinBox_threshold_cwt.setValue(self.params['cwt']['threshold'])
-        self.doubleSpinBox_selectivity.setValue(self.params['cwt']['selectivity'])
+        self.spinBox_selectivity.setValue(self.params['cwt']['selectivity'])
         self.doubleSpinBox_extent.setValue(self.params['cwt']['extent'])
 
     def get_file_list(self, signal):
@@ -1299,7 +1299,7 @@ class Ui_MainWindow(object):
         # self.df['intensity'] = self.df['coeff']
         # self.df['class'] = self.df['label']
         self.df['scale'] = self.df['scale']*1e3
-        self.df['label'] = np.array(self.params['targets']['name'])[self.df['label']]
+        # self.df['label'] = np.array(self.params['targets']['name'])[self.df['label']]
         colors = []
         names = self.params['targets']['name']
         for n,c in enumerate(self.params['targets']['color']):
@@ -1339,7 +1339,7 @@ class Ui_MainWindow(object):
     def save_events(self,events):
         if events is not None:
             filename = QFileDialog.getSaveFileName(None,'Save Events As', self.params['currentdir'], 'Numpy Array (*.npy);;CSV (*.csv)')[0]
-            if filename is not '':
+            if filename != '':
                 if os.path.splitext(filename)[1] == 'npy':
                     with open(filename, 'wb') as f:
                         np.save(f, events)
@@ -1365,7 +1365,7 @@ class Events_Model(QAbstractTableModel):
             value = self._data[index.row()][index.column()]
             if index.column() in [0,2]:
                 return f"{value:.3f}"
-            if index.column() is 1:
+            if index.column() == 1:
                 return f"{value*1e3:.3f}"
             if index.column() in [3,4]:
                 return f"{value:.0f}"

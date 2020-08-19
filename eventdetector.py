@@ -9,7 +9,6 @@ import time as time
 from concurrent.futures import ProcessPoolExecutor as Executor
 from concurrent.futures import as_completed
 from threading import Lock
-from sklearn.cluster import KMeans
 import h5py as h5py
 import sys as sys
 from PySide2.QtCore import Signal, Slot, QObject

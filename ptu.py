@@ -16,7 +16,7 @@ class ptu(QObject):
 		self.chunksize = 100
 		self.globres = 250e-12
 
-	def processHT2(self, relim=False):
+	def processHT2(self, update=False, relim=False):
 		T2WRAPAROUND_V2 = 33554432
 		ofcorr = 0
 		bin_size = int(self.binsize/self.globres)
@@ -35,7 +35,7 @@ class ptu(QObject):
 			with open(self.filename, mode='rb') as fin:
 				f_mmap = mmap.mmap(fin.fileno(),0,access=mmap.ACCESS_READ)
 				offset = int(f_mmap.find(str.encode('Header_End'))+48)
-				print(os.path.getsize(self.filename))
+				# print(os.path.getsize(self.filename))
 				progress_total = os.path.getsize(self.filename)/(self.chunksize*4)+1
 				progress_current = 0
 				while self.timeout > 0:
@@ -72,5 +72,6 @@ class ptu(QObject):
 			ds_time[:] = np.arange(0, self.binsize*1e12*ds_time.size, self.binsize*1e12, dtype=np.uint64)
 			# print('trace length:',ds_count.size*self.binsize,'[s]')
 		self.started.emit(False)
-		self.updateplot.emit(relim)
+		if update:
+			self.updateplot.emit(relim)
 		return
