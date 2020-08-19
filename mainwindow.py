@@ -1259,7 +1259,7 @@ class Ui_MainWindow(object):
             N = len(pattern)
         else:
             N = int(pattern)
-        if N > 10:
+        if N > 32:
             print('N is too big')
             return
         mod = self.doubleSpinBox_mod.value()

@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.special import erf
 
-def ricker(scale=10, N=1, window=1, mod=None, shift=None, skewness=None, dt=1):
+def ricker(scale=10, N=1, pattern=None, window=1, mod=None, shift=None, skewness=None, dt=1):
     resolution = scale/dt
     length = int((10*window)*resolution)
     a = resolution/1.25187536
@@ -12,7 +12,7 @@ def ricker(scale=10, N=1, window=1, mod=None, shift=None, skewness=None, dt=1):
     s -= np.mean(s)
     return s/np.sqrt(s_square_norm)
 
-def morlet(scale=10, N=6, window=1, mod=None, shift=None, skewness=None, is_complex=False, dt=1):
+def morlet(scale=10, N=6, pattern=None, window=1, mod=None, shift=None, skewness=None, is_complex=False, dt=1):
     resolution = scale/dt
     length = int(2*(N+4)*window*resolution)
     t = np.arange(length)
@@ -27,7 +27,7 @@ def morlet(scale=10, N=6, window=1, mod=None, shift=None, skewness=None, is_comp
     s_square_norm = np.trapz(np.abs(s)**2, dx=1)
     return s/np.sqrt(s_square_norm)
 
-def morlet_complex(scale=10, N=6, window=1, mod=None, shift=None, skewness=None, is_complex=True, dt=1):
+def morlet_complex(scale=10, N=6, pattern=None, window=1, mod=None, shift=None, skewness=None, is_complex=True, dt=1):
     resolution = scale/dt
     length = int(2*(N+4)*window*resolution)
     t = np.arange(length)
