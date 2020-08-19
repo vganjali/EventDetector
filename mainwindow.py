@@ -161,12 +161,12 @@ class Ui_MainWindow(object):
         self.splitter_explorer.setObjectName(u"splitter_explorer")
         self.splitter_explorer.setOrientation(Qt.Vertical)
         self.splitter_explorer.setChildrenCollapsible(False)
-        self.listWidget_files = QListWidget(self.splitter_explorer)
-        self.listWidget_files.setObjectName(u"listWidget_files")
-        self.listWidget_files.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.dirmodel = QFileSystemModel()
         self.dirmodel.setRootPath(self.params['currentdir'])
         self.dirmodel.setFilter(QDir.AllDirs | QDir.NoDotAndDotDot)
+        self.listWidget_files = QListWidget(self.splitter_explorer)
+        self.listWidget_files.setObjectName(u"listWidget_files")
+        self.listWidget_files.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.treeView_explorer = QTreeView(self.splitter_explorer)
         self.treeView_explorer.setObjectName(u"treeView_explorer")
         self.treeView_explorer.setIndentation(10)
@@ -182,6 +182,60 @@ class Ui_MainWindow(object):
         self.splitter_explorer.addWidget(self.treeView_explorer)
         self.treeView_explorer.header().setVisible(False)
         self.splitter_explorer.addWidget(self.listWidget_files)
+        self.groupBox_realtime = QGroupBox(self.splitter_explorer)
+        self.groupBox_realtime.setObjectName(u"groupBox_realtime")
+        self.groupBox_realtime.setAlignment(Qt.AlignCenter)
+        self.gridLayout_6 = QGridLayout(self.groupBox_realtime)
+        self.gridLayout_6.setObjectName(u"gridLayout_6")
+        self.spinBox_buffersize = QSpinBox(self.groupBox_realtime)
+        self.spinBox_buffersize.setObjectName(u"spinBox_buffersize")
+        self.spinBox_buffersize.setMinimum(64)
+        self.spinBox_buffersize.setMaximum(4096)
+        self.spinBox_buffersize.setSingleStep(64)
+        self.spinBox_buffersize.setValue(256)
+        self.spinBox_buffersize.setDisplayIntegerBase(10)
+
+        self.gridLayout_6.addWidget(self.spinBox_buffersize, 2, 1, 1, 1)
+
+        self.doubleSpinBox_windowsize = QDoubleSpinBox(self.groupBox_realtime)
+        self.doubleSpinBox_windowsize.setObjectName(u"doubleSpinBox_windowsize")
+        self.doubleSpinBox_windowsize.setDecimals(2)
+        self.doubleSpinBox_windowsize.setMaximum(3600.000000000000000)
+        self.doubleSpinBox_windowsize.setValue(10.000000000000000)
+
+        self.gridLayout_6.addWidget(self.doubleSpinBox_windowsize, 1, 1, 1, 1)
+
+        self.label_buffersize = QLabel(self.groupBox_realtime)
+        self.label_buffersize.setObjectName(u"label_buffersize")
+
+        self.gridLayout_6.addWidget(self.label_buffersize, 2, 0, 1, 1)
+
+        self.label_window = QLabel(self.groupBox_realtime)
+        self.label_window.setObjectName(u"label_window")
+
+        self.gridLayout_6.addWidget(self.label_window, 1, 0, 1, 1)
+
+        self.pushButton_realtime = QPushButton(self.groupBox_realtime)
+        self.pushButton_realtime.setObjectName(u"pushButton_realtime")
+        sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButton_realtime.sizePolicy().hasHeightForWidth())
+        self.pushButton_realtime.setSizePolicy(sizePolicy)
+
+        self.gridLayout_6.addWidget(self.pushButton_realtime, 1, 2, 2, 1)
+
+        self.label_filename = QLabel(self.groupBox_realtime)
+        self.label_filename.setObjectName(u"label_filename")
+
+        self.gridLayout_6.addWidget(self.label_filename, 0, 0, 1, 1)
+
+        self.lineEdit_filename = QLineEdit(self.groupBox_realtime)
+        self.lineEdit_filename.setObjectName(u"lineEdit_filename")
+
+        self.gridLayout_6.addWidget(self.lineEdit_filename, 0, 1, 1, 2)
+
+        self.splitter_explorer.addWidget(self.groupBox_realtime)
 
         self.verticalLayout_explorer.addWidget(self.splitter_explorer)
 
@@ -630,10 +684,10 @@ class Ui_MainWindow(object):
 
         self.gridLayout_analyze_cwt.addWidget(self.label_selectivity, 3, 0, 1, 2)
 
-        self.checkBox_store_cwt = QCheckBox(self.groupBox_analyze_cwt)
-        self.checkBox_store_cwt.setObjectName(u"checkBox_store_cwt")
+        self.checkBox_show_cwt = QCheckBox(self.groupBox_analyze_cwt)
+        self.checkBox_show_cwt.setObjectName(u"checkBox_show_cwt")
 
-        self.gridLayout_analyze_cwt.addWidget(self.checkBox_store_cwt, 4, 0, 1, 2)
+        self.gridLayout_analyze_cwt.addWidget(self.checkBox_show_cwt, 4, 0, 1, 2)
 
         self.doubleSpinBox_scales_max = QDoubleSpinBox(self.groupBox_analyze_cwt)
         self.doubleSpinBox_scales_max.setObjectName(u"doubleSpinBox_scales_max")
@@ -861,59 +915,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_binningandwindow_2.addWidget(self.groupBox_binning_and_window)
 
-        self.groupBox_realtime = QGroupBox(self.dockWidget_controlpanel_Contents)
-        self.groupBox_realtime.setObjectName(u"groupBox_realtime")
-        self.groupBox_realtime.setAlignment(Qt.AlignCenter)
-        self.gridLayout_6 = QGridLayout(self.groupBox_realtime)
-        self.gridLayout_6.setObjectName(u"gridLayout_6")
-        self.spinBox_buffersize = QSpinBox(self.groupBox_realtime)
-        self.spinBox_buffersize.setObjectName(u"spinBox_buffersize")
-        self.spinBox_buffersize.setMinimum(64)
-        self.spinBox_buffersize.setMaximum(4096)
-        self.spinBox_buffersize.setSingleStep(64)
-        self.spinBox_buffersize.setValue(256)
-        self.spinBox_buffersize.setDisplayIntegerBase(10)
-
-        self.gridLayout_6.addWidget(self.spinBox_buffersize, 2, 1, 1, 1)
-
-        self.doubleSpinBox_windowsize = QDoubleSpinBox(self.groupBox_realtime)
-        self.doubleSpinBox_windowsize.setObjectName(u"doubleSpinBox_windowsize")
-        self.doubleSpinBox_windowsize.setDecimals(2)
-        self.doubleSpinBox_windowsize.setMaximum(3600.000000000000000)
-        self.doubleSpinBox_windowsize.setValue(10.000000000000000)
-
-        self.gridLayout_6.addWidget(self.doubleSpinBox_windowsize, 1, 1, 1, 1)
-
-        self.label_buffersize = QLabel(self.groupBox_realtime)
-        self.label_buffersize.setObjectName(u"label_buffersize")
-
-        self.gridLayout_6.addWidget(self.label_buffersize, 2, 0, 1, 1)
-
-        self.label_window = QLabel(self.groupBox_realtime)
-        self.label_window.setObjectName(u"label_window")
-
-        self.gridLayout_6.addWidget(self.label_window, 1, 0, 1, 1)
-
-        self.pushButton_realtime = QPushButton(self.groupBox_realtime)
-        self.pushButton_realtime.setObjectName(u"pushButton_realtime")
-        sizePolicy2.setHeightForWidth(self.pushButton_realtime.sizePolicy().hasHeightForWidth())
-        self.pushButton_realtime.setSizePolicy(sizePolicy2)
-
-        self.gridLayout_6.addWidget(self.pushButton_realtime, 1, 2, 2, 1)
-
-        self.label_filename = QLabel(self.groupBox_realtime)
-        self.label_filename.setObjectName(u"label_filename")
-
-        self.gridLayout_6.addWidget(self.label_filename, 0, 0, 1, 1)
-
-        self.lineEdit_filename = QLineEdit(self.groupBox_realtime)
-        self.lineEdit_filename.setObjectName(u"lineEdit_filename")
-
-        self.gridLayout_6.addWidget(self.lineEdit_filename, 0, 1, 1, 2)
-
-
-        self.verticalLayout_binningandwindow_2.addWidget(self.groupBox_realtime)
-
+ 
         self.dockWidget_controlpanel.setWidget(self.dockWidget_controlpanel_Contents)
         MainWindow.addDockWidget(Qt.LeftDockWidgetArea, self.dockWidget_controlpanel)
         self.statusBar = QStatusBar(MainWindow)
@@ -1006,6 +1008,12 @@ class Ui_MainWindow(object):
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"Help", None))
         self.dockWidget_controlpanel.setWindowTitle(QCoreApplication.translate("MainWindow", u"Control Panel", None))
+        self.groupBox_realtime.setTitle(QCoreApplication.translate("MainWindow", u"Real Time", None))
+        self.label_buffersize.setText(QCoreApplication.translate("MainWindow", u"Buffer Size [MB]", None))
+        self.label_window.setText(QCoreApplication.translate("MainWindow", u"Window [s]", None))
+        self.pushButton_realtime.setText(QCoreApplication.translate("MainWindow", u"Start", None))
+        self.label_filename.setText(QCoreApplication.translate("MainWindow", u"File Name", None))
+        self.lineEdit_filename.setText(QCoreApplication.translate("MainWindow", u"default_000", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.explorer_page), QCoreApplication.translate("MainWindow", u"File Explorer", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Excitation Profile", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"# of modes", None))
@@ -1042,7 +1050,7 @@ class Ui_MainWindow(object):
         self.groupBox_analyze_cwt.setTitle(QCoreApplication.translate("MainWindow", u"CWT", None))
         self.label_threshold_cwt.setText(QCoreApplication.translate("MainWindow", u"Threshold", None))
         self.label_selectivity.setText(QCoreApplication.translate("MainWindow", u"Selectivity, extent", None))
-        self.checkBox_store_cwt.setText(QCoreApplication.translate("MainWindow", u"Store CWT", None))
+        self.checkBox_show_cwt.setText(QCoreApplication.translate("MainWindow", u"Show CWT", None))
         self.checkBox_store_events.setText(QCoreApplication.translate("MainWindow", u"Store Events", None))
         self.pushButton_cwt.setText(QCoreApplication.translate("MainWindow", u"Detect Events", None))
         self.label_showcwt.setText(QCoreApplication.translate("MainWindow", u"Show CWT for", None))
@@ -1058,14 +1066,8 @@ class Ui_MainWindow(object):
         self.pushButton_save_events.setText(QCoreApplication.translate("MainWindow", u"Save As", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_list), QCoreApplication.translate("MainWindow", u"Events List", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.results_page), QCoreApplication.translate("MainWindow", u"Results", None))
-        self.groupBox_binning_and_window.setTitle(QCoreApplication.translate("MainWindow", u"Binning && Window", None))
+        self.groupBox_binning_and_window.setTitle(QCoreApplication.translate("MainWindow", u"Binning", None))
         self.label_binsize.setText(QCoreApplication.translate("MainWindow", u"Bin size [ms]", None))
-        self.groupBox_realtime.setTitle(QCoreApplication.translate("MainWindow", u"Real Time", None))
-        self.label_window.setText(QCoreApplication.translate("MainWindow", u"Window [s]", None))
-        self.label_buffersize.setText(QCoreApplication.translate("MainWindow", u"Buffer Size [MB]", None))
-        self.pushButton_realtime.setText(QCoreApplication.translate("MainWindow", u"Start", None))
-        self.label_filename.setText(QCoreApplication.translate("MainWindow", u"File Name", None))
-        self.lineEdit_filename.setText(QCoreApplication.translate("MainWindow", u"default_000", None))
     # retranslateUi
 	
     def config_init(self):

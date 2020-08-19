@@ -120,7 +120,7 @@ class MainWindow(QMainWindow):
 			except Exception as e:
 				print(e)
 		self.eventdetector.ptufile = self.ptufile
-		if self.ui.checkBox_store_cwt.checkState() == Qt.CheckState.Checked:
+		if self.ui.checkBox_show_cwt.checkState() == Qt.CheckState.Checked:
 			self.eventdetector.cwt_plot = True
 		else:
 			self.eventdetector.cwt_plot = False
