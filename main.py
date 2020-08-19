@@ -13,7 +13,7 @@ from PySide2.QtCore import Qt
 # import pyqtgraph as pg
 # import vaex
 # import h5py
-modules = {'mainwindow':'mw', 'ptu':'', 'wavelet':'', 'eventdetector':'ed', 'threading':'', 'pyqtgraph':'pg'}
+modules = {'mainwindow':'mw', 'ptu':'', 'wavelet':'', 'eventdetector':'ed', 'threading':'', 'pyqtgraph':'pg', 'numpy':'np'}
 
 class MainWindow(QMainWindow):
 	def __init__(self):
@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
 		self.ptufile.started.connect(self.ui.progressBar.setVisible)
 		self.ptufile.started.connect(self.update_statusbar)
 		self.ptufile.updateplot.connect(self.update_time_plot)
+		self.ptufile.updateplot_timer.timeout.connect(self.update_time_plot_rt)
 		self.eventdetector.progress.connect(self.ui.progressBar.setValue)
 		self.eventdetector.started.connect(self.ui.progressBar.setVisible)
 		self.eventdetector.started.connect(self.update_statusbar)
@@ -34,6 +35,8 @@ class MainWindow(QMainWindow):
 		self.eventdetector.showevents.connect(self.update_events)
 		self.eventdetector.drawcwt.connect(self.update_cwt_plot)
 		self.ui.listWidget_files.clicked.connect(lambda sig: self.read_file(filename=sig,update=True,relim=True))
+		self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=False)
+		self.ui.pushButton_realtime.clicked.connect(self.time_plot_rt)
 		self.ui.doubleSpinBox_binsize.editingFinished.connect(lambda: self.read_file(filename=self.ui.listWidget_files.currentIndex(),update=True,relim=False))
 		self.ui.pushButton_cwt.clicked.connect(self.detect_events)
 		# with h5py.File("C:/Users/vahid/.vaex/data/helmi-dezeeuw-2000-FeH-v2-10percent.hdf5",'r') as f:
@@ -41,12 +44,13 @@ class MainWindow(QMainWindow):
 
 	def read_file(self, filename, update=True, relim=False):
 		try:
-			self.ui.params['binsize'] = self.ui.doubleSpinBox_binsize.value()*1e-3
-			self.ui.params['window'] = [self.ui.doubleSpinBox_window_l.value(), self.ui.doubleSpinBox_window_r.value()]
+			# self.ui.params['binsize'] = self.ui.doubleSpinBox_binsize.value()*1e-3
+			# self.ui.params['buffer'] = self.ui.spinBox_buffersize.value()*1024
 			if ((self.ui.params['currentdir']+filename.data() != self.ptufile.filename) or 
 				(self.ui.params['binsize'] != self.ptufile.binsize)):
 				self.ptufile.filename = self.ui.params['currentdir']+filename.data()
 				self.ptufile.binsize = self.ui.params['binsize']
+				self.ptufile.buffer = int(self.ui.params['buffer']*1024*1024/4)
 				self.read_file_thread = threading.Thread(target=self.ptufile.processHT2, args=(update,relim,),daemon=False)
 				# print(f"binning {ptufile.filename}")
 				self.ui.progressBar.reset()
@@ -54,6 +58,53 @@ class MainWindow(QMainWindow):
 		except Exception as e:
 			print(e)
 			pass
+	
+	def time_plot_rt(self):
+		try:
+			if not self.read_file_thread.is_alive():
+				print('start')
+				# self.ui.params['binsize'] = self.ui.doubleSpinBox_binsize.value()*1e-3
+				# self.ui.params['window'] = self.ui.doubleSpinBox_windowsize.value()
+				self.ptufile.filename = self.ui.params['currentdir']+self.ui.lineEdit_filename.text()+'.ptu'
+				self.ptufile.binsize = self.ui.params['binsize']
+				self.ptufile.buffer = int(self.ui.params['buffer']*1024*1024/20/4)
+				self.ptufile.rt_active = True
+				while not self.ptufile.queue.empty():
+					self.ptufile.queue.get()
+				self.ui.plot_line.setLabel('left',f"Intensity [cnts/{self.ptufile.binsize*1e3:g}ms]")
+				self.ui.plot_line.disableAutoRange()
+				self.rt_plot_line = self.ui.plot_line.plot(
+					[],
+					[],
+					pen=pg.mkPen(color='b'),
+					clear=True,
+					name='CH 1'
+					# fillLevel=0,
+					# fillBrush=pg.mkBrush(color='b'),
+					)
+				self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=True)
+				self.read_file_thread.start()
+				self.ptufile.updateplot_timer.start()
+				self.ui.pushButton_realtime.setText('Stop')
+				self.statusBar().showMessage('Realtime Plotting...')
+			else:
+				print('stopped')
+				self.ptufile.rt_active = False
+				self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=False)
+				self.ptufile.updateplot_timer.stop()
+				while not self.ptufile.queue.empty():
+					self.ptufile.queue.get()
+				self.ui.pushButton_realtime.setText('Start')
+				self.statusBar().showMessage('Idle')
+			# self.plot_thread = threading.Thread(target=self.update_time_plot_worker, args=(),daemon=False).start()
+		except Exception as e:
+			print(e)
+			while not self.ptufile.queue.empty():
+				self.ptufile.queue.get()
+			self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=False)
+			self.ptufile.rt_active = False
+
+
 
 	def detect_events(self):
 		import h5py, eventdetector
@@ -127,13 +178,35 @@ class MainWindow(QMainWindow):
 			# self.ui.plot_line.setDownsampling(ds=True, auto=False, mode='mean')
 			# self.ui.plot_line.setClipToView(clip=True)
 			if relim:
-				xrange = [max(f[f"{self.ptufile.binsize:010.6f}"]['time'][0]*1e-12,self.ui.doubleSpinBox_window_l.value()),
-						min(f[f"{self.ptufile.binsize:010.6f}"]['time'][-1]*1e-12,self.ui.doubleSpinBox_window_r.value())]
-				if xrange[1] == 0: xrange[1] = f[f"{self.ptufile.binsize:010.6f}"]['time'][-1]*1e-12
-				self.ui.plot_line.setXRange(xrange[0],xrange[1])
+				self.ui.plot_line.setXRange(f[f"{self.ptufile.binsize:010.6f}"]['time'][0]*1e-12,f[f"{self.ptufile.binsize:010.6f}"]['time'][-1]*1e-12)
 			self.ui.setYRange()
 		self.statusBar().showMessage('Idle')
 
+	def update_time_plot_rt(self):
+		if not self.ptufile.queue.empty():
+			buffer = self.ptufile.queue.get(block=False)
+			# print('get:',buffer['time'][0]*1e-12,buffer['time'][-1]*1e-12)
+			# self.ui.plot_line.plot(
+			# 	buffer['time']*1e-12,
+			# 	buffer['count'],
+			# 	pen=pg.mkPen(color='b'),
+			# 	clear=False,
+			# 	name='CH 1'
+			# 	# fillLevel=0,
+			# 	# fillBrush=pg.mkBrush(color='b'),
+			# 	)
+			self.rt_plot_line.setData(
+				np.append(self.rt_plot_line.xData,buffer['time']*1e-12),
+				np.append(self.rt_plot_line.yData,buffer['count']))
+			# self.ui.plot_line.setDownsampling(ds=True, auto=False, mode='mean')
+			# self.ui.plot_line.setClipToView(clip=True)
+			self.ptufile.queue.task_done()
+			self.ui.plot_line.setXRange(max(0,buffer['time'][-1]*1e-12-self.ui.params['window']),buffer['time'][-1]*1e-12)
+			self.ui.setYRange()
+		# elif not self.read_file_thread.is_alive():
+		# 	self.ptufile.updateplot_timer.stop()
+		# 	self.ui.pushButton_realtime.setText('Start')
+		# 	self.statusBar().showMessage('Idle')
 
 	def update_cwt_plot(self,cwt):
 		import numpy as np

@@ -842,53 +842,84 @@ class Ui_MainWindow(object):
         self.groupBox_binning_and_window = QGroupBox(self.dockWidget_controlpanel_Contents)
         self.groupBox_binning_and_window.setObjectName(u"groupBox_binning_and_window")
         self.groupBox_binning_and_window.setAlignment(Qt.AlignCenter)
-        self.verticalLayout_binningandwindow = QVBoxLayout(self.groupBox_binning_and_window)
-        self.verticalLayout_binningandwindow.setObjectName(u"verticalLayout_binningandwindow")
-        self.verticalLayout_binningandwindow.setContentsMargins(4, 4, 4, 4)
-        self.gridLayout_binningandwindow = QGridLayout()
-        self.gridLayout_binningandwindow.setObjectName(u"gridLayout_binningandwindow")
-        self.label_window = QLabel(self.groupBox_binning_and_window)
-        self.label_window.setObjectName(u"label_window")
-
-        self.gridLayout_binningandwindow.addWidget(self.label_window, 1, 0, 1, 1)
-
-        self.doubleSpinBox_window_r = QDoubleSpinBox(self.groupBox_binning_and_window)
-        self.doubleSpinBox_window_r.setObjectName(u"doubleSpinBox_window_r")
-        self.doubleSpinBox_window_r.setDecimals(3)
-        self.doubleSpinBox_window_r.setMaximum(100000)
-
-        self.gridLayout_binningandwindow.addWidget(self.doubleSpinBox_window_r, 1, 2, 1, 1)
-
+        self.gridLayout_2 = QGridLayout(self.groupBox_binning_and_window)
+        self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.gridLayout_2.setContentsMargins(4, 4, 4, 10)
         self.label_binsize = QLabel(self.groupBox_binning_and_window)
         self.label_binsize.setObjectName(u"label_binsize")
 
-        self.gridLayout_binningandwindow.addWidget(self.label_binsize, 0, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.label_binsize, 0, 0, 1, 1)
 
         self.doubleSpinBox_binsize = QDoubleSpinBox(self.groupBox_binning_and_window)
         self.doubleSpinBox_binsize.setObjectName(u"doubleSpinBox_binsize")
         self.doubleSpinBox_binsize.setDecimals(3)
-        self.doubleSpinBox_binsize.setMaximum(1000000.000000000000000)
+        self.doubleSpinBox_binsize.setMaximum(100000.000000000000000)
         self.doubleSpinBox_binsize.setSingleStep(0.010000000000000)
-        self.doubleSpinBox_binsize.setValue(0.05)
+        self.doubleSpinBox_binsize.setValue(1.000000000000000)
 
-        self.gridLayout_binningandwindow.addWidget(self.doubleSpinBox_binsize, 0, 1, 1, 2)
-
-        self.doubleSpinBox_window_l = QDoubleSpinBox(self.groupBox_binning_and_window)
-        self.doubleSpinBox_window_l.setObjectName(u"doubleSpinBox_window_l")
-        self.doubleSpinBox_window_l.setDecimals(3)
-        self.doubleSpinBox_window_l.setMaximum(100000)
-
-        self.gridLayout_binningandwindow.addWidget(self.doubleSpinBox_window_l, 1, 1, 1, 1)
-
-
-        self.verticalLayout_binningandwindow.addLayout(self.gridLayout_binningandwindow)
-
+        self.gridLayout_2.addWidget(self.doubleSpinBox_binsize, 0, 1, 1, 1)
 
         self.verticalLayout_binningandwindow_2.addWidget(self.groupBox_binning_and_window)
 
+        self.groupBox_realtime = QGroupBox(self.dockWidget_controlpanel_Contents)
+        self.groupBox_realtime.setObjectName(u"groupBox_realtime")
+        self.groupBox_realtime.setAlignment(Qt.AlignCenter)
+        self.gridLayout_6 = QGridLayout(self.groupBox_realtime)
+        self.gridLayout_6.setObjectName(u"gridLayout_6")
+        self.spinBox_buffersize = QSpinBox(self.groupBox_realtime)
+        self.spinBox_buffersize.setObjectName(u"spinBox_buffersize")
+        self.spinBox_buffersize.setMinimum(64)
+        self.spinBox_buffersize.setMaximum(4096)
+        self.spinBox_buffersize.setSingleStep(64)
+        self.spinBox_buffersize.setValue(256)
+        self.spinBox_buffersize.setDisplayIntegerBase(10)
+
+        self.gridLayout_6.addWidget(self.spinBox_buffersize, 2, 1, 1, 1)
+
+        self.doubleSpinBox_windowsize = QDoubleSpinBox(self.groupBox_realtime)
+        self.doubleSpinBox_windowsize.setObjectName(u"doubleSpinBox_windowsize")
+        self.doubleSpinBox_windowsize.setDecimals(2)
+        self.doubleSpinBox_windowsize.setMaximum(3600.000000000000000)
+        self.doubleSpinBox_windowsize.setValue(10.000000000000000)
+
+        self.gridLayout_6.addWidget(self.doubleSpinBox_windowsize, 1, 1, 1, 1)
+
+        self.label_buffersize = QLabel(self.groupBox_realtime)
+        self.label_buffersize.setObjectName(u"label_buffersize")
+
+        self.gridLayout_6.addWidget(self.label_buffersize, 2, 0, 1, 1)
+
+        self.label_window = QLabel(self.groupBox_realtime)
+        self.label_window.setObjectName(u"label_window")
+
+        self.gridLayout_6.addWidget(self.label_window, 1, 0, 1, 1)
+
+        self.pushButton_realtime = QPushButton(self.groupBox_realtime)
+        self.pushButton_realtime.setObjectName(u"pushButton_realtime")
+        sizePolicy2.setHeightForWidth(self.pushButton_realtime.sizePolicy().hasHeightForWidth())
+        self.pushButton_realtime.setSizePolicy(sizePolicy2)
+
+        self.gridLayout_6.addWidget(self.pushButton_realtime, 1, 2, 2, 1)
+
+        self.label_filename = QLabel(self.groupBox_realtime)
+        self.label_filename.setObjectName(u"label_filename")
+
+        self.gridLayout_6.addWidget(self.label_filename, 0, 0, 1, 1)
+
+        self.lineEdit_filename = QLineEdit(self.groupBox_realtime)
+        self.lineEdit_filename.setObjectName(u"lineEdit_filename")
+
+        self.gridLayout_6.addWidget(self.lineEdit_filename, 0, 1, 1, 2)
+
+
+        self.verticalLayout_binningandwindow_2.addWidget(self.groupBox_realtime)
+
         self.dockWidget_controlpanel.setWidget(self.dockWidget_controlpanel_Contents)
         MainWindow.addDockWidget(Qt.LeftDockWidgetArea, self.dockWidget_controlpanel)
-        
+        self.statusBar = QStatusBar(MainWindow)
+        self.statusBar.setObjectName(u"statusBar")
+        MainWindow.setStatusBar(self.statusBar)
+
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
         MainWindow.setStatusBar(self.statusbar)
@@ -947,6 +978,9 @@ class Ui_MainWindow(object):
         self.horizontalSlider_skewness.valueChanged.connect(self.wavelet_update)
         self.lineEdit_N.editingFinished.connect(self.wavelet_update)
 
+        self.doubleSpinBox_binsize.valueChanged.connect(self.update_params)
+        self.doubleSpinBox_windowsize.valueChanged.connect(self.update_params)
+        self.spinBox_buffersize.valueChanged.connect(self.update_params)
         self.doubleSpinBox_scales_min.valueChanged.connect(self.update_params)
         self.doubleSpinBox_scales_max.valueChanged.connect(self.update_params)
         self.spinBox_scales_count.valueChanged.connect(self.update_params)
@@ -1025,8 +1059,13 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_list), QCoreApplication.translate("MainWindow", u"Events List", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.results_page), QCoreApplication.translate("MainWindow", u"Results", None))
         self.groupBox_binning_and_window.setTitle(QCoreApplication.translate("MainWindow", u"Binning && Window", None))
-        self.label_window.setText(QCoreApplication.translate("MainWindow", u"Window [s]", None))
         self.label_binsize.setText(QCoreApplication.translate("MainWindow", u"Bin size [ms]", None))
+        self.groupBox_realtime.setTitle(QCoreApplication.translate("MainWindow", u"Real Time", None))
+        self.label_window.setText(QCoreApplication.translate("MainWindow", u"Window [s]", None))
+        self.label_buffersize.setText(QCoreApplication.translate("MainWindow", u"Buffer Size [MB]", None))
+        self.pushButton_realtime.setText(QCoreApplication.translate("MainWindow", u"Start", None))
+        self.label_filename.setText(QCoreApplication.translate("MainWindow", u"File Name", None))
+        self.lineEdit_filename.setText(QCoreApplication.translate("MainWindow", u"default_000", None))
     # retranslateUi
 	
     def config_init(self):
@@ -1037,10 +1076,8 @@ class Ui_MainWindow(object):
             self.params = {
                 'currentdir': '',
                 'binsize': 1e-3,
-                'window': {
-                    'l': 0,
-                    'r': 0
-                    },
+                'window': 10,
+                'buffer': 256,
                 'targets': {
                     'name':[],
                     'color':[],
@@ -1089,6 +1126,9 @@ class Ui_MainWindow(object):
                 json.dump(self.params, cf, sort_keys=True, indent=4)
 
     def update_params(self,*value):
+        self.params['binsize'] = self.doubleSpinBox_binsize.value()*1e-3
+        self.params['window'] = self.doubleSpinBox_windowsize.value()
+        self.params['buffer'] = self.spinBox_buffersize.value()
         self.params['cwt']['scales']['min'] = self.doubleSpinBox_scales_min.value()*1e-3
         self.params['cwt']['scales']['max'] = self.doubleSpinBox_scales_max.value()*1e-3
         self.params['cwt']['scales']['count'] = self.spinBox_scales_count.value()
@@ -1104,6 +1144,9 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_threshold_cwt.setValue(self.params['cwt']['threshold'])
         self.spinBox_selectivity.setValue(self.params['cwt']['selectivity'])
         self.doubleSpinBox_extent.setValue(self.params['cwt']['extent'])
+        self.doubleSpinBox_binsize.setValue(self.params['binsize'])
+        self.doubleSpinBox_windowsize.setValue(self.params['window'])
+        self.spinBox_buffersize.setValue(self.params['buffer'])
 
     def get_file_list(self, signal):
         self.params['currentdir'] = self.dirmodel.filePath(signal)+'/'
