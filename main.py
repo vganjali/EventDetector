@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
 	def time_plot_rt(self):
 		try:
 			if not self.read_file_thread.is_alive():
-				print('start')
+				# print('start')
 				# self.ui.params['binsize'] = self.ui.doubleSpinBox_binsize.value()*1e-3
 				# self.ui.params['window'] = self.ui.doubleSpinBox_windowsize.value()
 				self.ptufile.filename = self.ui.params['currentdir']+self.ui.lineEdit_filename.text()+'.ptu'
@@ -88,7 +88,7 @@ class MainWindow(QMainWindow):
 				self.ui.pushButton_realtime.setText('Stop')
 				self.statusBar().showMessage('Realtime Plotting...')
 			else:
-				print('stopped')
+				# print('stopped')
 				self.ptufile.rt_active = False
 				self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=False)
 				self.ptufile.updateplot_timer.stop()
@@ -108,7 +108,7 @@ class MainWindow(QMainWindow):
 
 	def detect_events(self):
 		import h5py, eventdetector
-		print('started')
+		# print('started')
 		self.statusBar().showMessage('Analyzing')
 		_wavelets = self.generate_wavelets()
 		# [print(k,len(_wavelets[k]['wavelets'])) for k in _wavelets.keys()]

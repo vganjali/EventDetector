@@ -12,7 +12,6 @@ class ptu(QObject):
 	started = Signal(bool)
 	updateplot = Signal(bool)
 	updateplot_timer = QTimer()
-	updateplot_timer.setInterval(50)
 	def __init__(self):
 		QObject.__init__(self)
 		self.filename = ''
@@ -21,6 +20,8 @@ class ptu(QObject):
 		self.globres = 250e-12
 		self.queue = queue.Queue(maxsize=20)
 		self.rt_active = False
+		self.update_interval = 50 #ms
+		self.updateplot_timer.setInterval(self.update_interval)
 
 	def processHT2(self, update=False, relim=False):
 		T2WRAPAROUND_V2 = 33554432
@@ -100,8 +101,8 @@ class ptu(QObject):
 				try:
 					records = np.frombuffer(f_mmap,dtype=np.uint32,count=self.buffer,offset=offset)
 				except Exception as e:
-					print(e)
-					time.sleep(0.5)
+					# print(e)
+					time.sleep(self.update_interval/1000)
 					records = np.frombuffer(f_mmap,dtype=np.uint32,count=-1,offset=offset)
 				if len(records) > 0:
 					special = np.bitwise_and(np.right_shift(records,31), 0x01).astype(np.byte)
