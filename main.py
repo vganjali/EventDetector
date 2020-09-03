@@ -1,3 +1,6 @@
+"""
+version: 1.0.0
+"""
 import sys
 import os
 import time
@@ -10,6 +13,8 @@ from PySide2.QtGui import QPixmap
 # from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import (QSplashScreen, QMainWindow, QApplication)
 from PySide2.QtCore import Qt
+import requests
+import re
 # import pyqtgraph as pg
 # import vaex
 # import numpy as np
@@ -127,12 +132,16 @@ class MainWindow(QMainWindow):
 		# [print(k,len(_wavelets[k]['wavelets'])) for k in _wavelets.keys()]
 		self.ui.params['cwt']['window'] = {'l':list(self.ui.plot_line.getAxis('bottom').range)[0],'r':list(self.ui.plot_line.getAxis('bottom').range)[1]}
 		self.ptufile.binsize = self.ui.params['cwt']['scales']['min']/self.ui.params['cwt']['resolution']
+		self.ptufile.buffer = int(self.ui.params['buffer']*1024*1024/4)
 		for k in self.ui.params['cwt']:
 			try:
 				setattr(self.eventdetector, k, self.ui.params['cwt'][k])
 			except Exception as e:
 				print(e)
 		self.eventdetector.ptufile = self.ptufile
+		# self.eventdetector.chunksize = int(self.ui.params['buffer']*8)
+		# self.eventdetector.chunksize = 100
+		self.eventdetector.window = self.ui.params['cwt']['window']
 		if self.ui.checkBox_show_cwt.checkState() == Qt.CheckState.Checked:
 			self.eventdetector.cwt_plot = True
 		else:
@@ -291,7 +300,6 @@ class MainWindow(QMainWindow):
 		# [self.ui.image_cwt_ax.addItem(self.ui.scatter_events[k]) for k in self.ui.scatter_events.keys()]
 
 if __name__ == '__main__':
-	from PySide2.QtCore import Qt
 	if sys.platform.startswith('win'):
 		multiprocessing.freeze_support()
 	app = QApplication(sys.argv)
@@ -301,6 +309,9 @@ if __name__ == '__main__':
 
 	# Loading some items
 	QApplication.processEvents()
+	r = requests.get('https://raw.github.com/vganjali/EventDetector/realtime/main.py')
+	version = re.search('version:',r.text)
+	print(version)
 	for module,name in modules.items():
 		splash.showMessage(f'Loading {module}...',
 							Qt.AlignBottom | Qt.AlignLeft,
