@@ -1,5 +1,5 @@
 """
-version: 1.0.0
+version:0.1.0
 """
 import sys
 import os
@@ -11,7 +11,7 @@ from concurrent.futures import as_completed
 
 from PySide2.QtGui import QPixmap
 # from PySide2.QtUiTools import QUiLoader
-from PySide2.QtWidgets import (QSplashScreen, QMainWindow, QApplication)
+from PySide2.QtWidgets import (QSplashScreen, QMainWindow, QApplication, QMessageBox)
 from PySide2.QtCore import Qt
 import requests
 import re
@@ -309,9 +309,43 @@ if __name__ == '__main__':
 
 	# Loading some items
 	QApplication.processEvents()
-	r = requests.get('https://raw.github.com/vganjali/EventDetector/realtime/main.py')
-	version = re.search('version:',r.text)
-	print(version)
+	# Checking for updates
+	splash.showMessage(f'Checking for updates...',
+							Qt.AlignBottom | Qt.AlignLeft,
+							Qt.white)
+	with open(__file__) as main_file:
+		current_version = int(re.findall(r'version:.*\d*.\d*.\d*',main_file.read())[0].split(':')[1].replace(' ','').replace('.',''))
+	try:
+		r = requests.get('https://raw.github.com/vganjali/EventDetector/realtime/main.py',timeout=1)
+		new_version = int(re.findall(r'version:.*\d*.\d*.\d*',r.text)[0].split(':')[1].replace(' ','').replace('.',''))
+	except:
+		new_version = 0
+	if new_version > current_version:
+		print('Updates are available')
+		ret = QMessageBox.information(
+			None,"Update",
+			"Updates are available.\nDo you want to download?",
+			QMessageBox.Yes | QMessageBox.No,
+			QMessageBox.Yes
+		)
+		if ret == QMessageBox.Yes:
+			from pathlib import Path
+			file_list = ['main.py','mainwindow.py','ptu.py','eventdetector.py','wavelet.py','splash.png']
+			for f in file_list:
+				r = requests.get(f'https://raw.github.com/vganjali/EventDetector/realtime/{f}',timeout=1)
+				with open(f'{str(Path.home())}/Downloads/{f}', 'wb') as f:
+					f.write(r.content)
+			ret = QMessageBox.information(
+				None,"Update",
+				"Files downloaded to 'home/Downloads/\nreplace the installation files 'C:/program files/SMD Analysis'"
+			)
+			# Save was clicked
+		elif ret == QMessageBox.No:
+			print('')
+		else:
+			print('')
+			# should never be reached
+
 	for module,name in modules.items():
 		splash.showMessage(f'Loading {module}...',
 							Qt.AlignBottom | Qt.AlignLeft,

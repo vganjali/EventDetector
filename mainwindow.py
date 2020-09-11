@@ -25,6 +25,7 @@ import numpy as np
 # from PySide2.QtWidgets import QApplication
 # from PySide2.QtWebEngineWidgets import *
 import pyqtgraph as pg
+from pathlib import Path
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -528,22 +529,22 @@ class Ui_MainWindow(object):
 
         self.comboBox_wavelet = QComboBox(self.groupBox_waveletparameters)
         self.comboBox_wavelet.setObjectName(u"comboBox_wavelet")
-        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(3)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.comboBox_wavelet.sizePolicy().hasHeightForWidth())
-        self.comboBox_wavelet.setSizePolicy(sizePolicy)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        sizePolicy1.setHorizontalStretch(3)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.comboBox_wavelet.sizePolicy().hasHeightForWidth())
+        self.comboBox_wavelet.setSizePolicy(sizePolicy1)
         [self.comboBox_wavelet.addItem(w) for w in ['Multi-spot Gaussian', 'Multi-spot Gaussian (encoded)','Morlet', 'Morlet_Complex', 'Ricker']]
 
         self.gridLayout_waveletparameters.addWidget(self.comboBox_wavelet, 1, 1, 1, 1)
 
         self.lineEdit_N = QLineEdit(self.groupBox_waveletparameters)
         self.lineEdit_N.setObjectName(u"lineEdit_N")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        sizePolicy1.setHorizontalStretch(1)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.lineEdit_N.sizePolicy().hasHeightForWidth())
-        self.lineEdit_N.setSizePolicy(sizePolicy1)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        sizePolicy2.setHorizontalStretch(1)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.lineEdit_N.sizePolicy().hasHeightForWidth())
+        self.lineEdit_N.setSizePolicy(sizePolicy2)
 
         self.gridLayout_waveletparameters.addWidget(self.lineEdit_N, 1, 2, 1, 1)
 
@@ -558,10 +559,50 @@ class Ui_MainWindow(object):
         self.gridLayout.setObjectName(u"gridLayout")
         self.doubleSpinBox_mod = QDoubleSpinBox(self.groupBox_wavelet_customize)
         self.doubleSpinBox_mod.setObjectName(u"doubleSpinBox_mod")
-        self.doubleSpinBox_mod.setMaximum(1.000000000000000)
-        self.doubleSpinBox_mod.setSingleStep(0.100000000000000)
+        self.doubleSpinBox_mod.setMaximum(10.000000000000000)
+        self.doubleSpinBox_mod.setSingleStep(0.10000000000000)
+        self.doubleSpinBox_mod.setValue(0.500000000000000)
 
         self.gridLayout.addWidget(self.doubleSpinBox_mod, 0, 3, 1, 1)
+
+        self.horizontalSlider_skewness = QSlider(self.groupBox_wavelet_customize)
+        self.horizontalSlider_skewness.setObjectName(u"horizontalSlider_skewness")
+        self.horizontalSlider_skewness.setMaximum(100)
+        self.horizontalSlider_skewness.setValue(50)
+        self.horizontalSlider_skewness.setOrientation(Qt.Horizontal)
+
+        self.gridLayout.addWidget(self.horizontalSlider_skewness, 2, 1, 1, 2)
+
+        self.doubleSpinBox_skewness = QDoubleSpinBox(self.groupBox_wavelet_customize)
+        self.doubleSpinBox_skewness.setObjectName(u"doubleSpinBox_skewness")
+        self.doubleSpinBox_skewness.setMaximum(1.000000000000000)
+        self.doubleSpinBox_skewness.setSingleStep(0.100000000000000)
+        self.doubleSpinBox_skewness.setValue(0.500000000000000)
+
+        self.gridLayout.addWidget(self.doubleSpinBox_skewness, 2, 3, 1, 1)
+
+        self.doubleSpinBox_shift = QDoubleSpinBox(self.groupBox_wavelet_customize)
+        self.doubleSpinBox_shift.setObjectName(u"doubleSpinBox_shift")
+        self.doubleSpinBox_shift.setMinimum(-5.000000000000000)
+        self.doubleSpinBox_shift.setMaximum(5.000000000000000)
+        self.doubleSpinBox_shift.setSingleStep(0.100000000000000)
+        self.doubleSpinBox_shift.setValue(1.000000000000000)
+
+        self.gridLayout.addWidget(self.doubleSpinBox_shift, 1, 3, 1, 1)
+
+        self.label_skewness = QLabel(self.groupBox_wavelet_customize)
+        self.label_skewness.setObjectName(u"label_skewness")
+
+        self.gridLayout.addWidget(self.label_skewness, 2, 0, 1, 1)
+
+        self.horizontalSlider_mod = QSlider(self.groupBox_wavelet_customize)
+        self.horizontalSlider_mod.setObjectName(u"horizontalSlider_mod")
+        self.horizontalSlider_mod.setMaximum(100)
+        self.horizontalSlider_mod.setSingleStep(1)
+        self.horizontalSlider_mod.setValue(50)
+        self.horizontalSlider_mod.setOrientation(Qt.Horizontal)
+
+        self.gridLayout.addWidget(self.horizontalSlider_mod, 0, 1, 1, 2)
 
         self.label_mod = QLabel(self.groupBox_wavelet_customize)
         self.label_mod.setObjectName(u"label_mod")
@@ -573,51 +614,21 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.label_shift, 1, 0, 1, 1)
 
-        self.doubleSpinBox_shift = QDoubleSpinBox(self.groupBox_wavelet_customize)
-        self.doubleSpinBox_shift.setObjectName(u"doubleSpinBox_shift")
-        self.doubleSpinBox_shift.setSingleStep(0.100000000000000)
-
-        self.gridLayout.addWidget(self.doubleSpinBox_shift, 1, 3, 1, 1)
-
-        self.label_skewness = QLabel(self.groupBox_wavelet_customize)
-        self.label_skewness.setObjectName(u"label_skewness")
-
-        self.gridLayout.addWidget(self.label_skewness, 2, 0, 1, 1)
-
-        self.doubleSpinBox_skewness = QDoubleSpinBox(self.groupBox_wavelet_customize)
-        self.doubleSpinBox_skewness.setObjectName(u"doubleSpinBox_skewness")
-
-        self.gridLayout.addWidget(self.doubleSpinBox_skewness, 2, 3, 1, 1)
-
-        self.horizontalSlider_skewness = QSlider(self.groupBox_wavelet_customize)
-        self.horizontalSlider_skewness.setObjectName(u"horizontalSlider_skewness")
-        self.horizontalSlider_skewness.setMaximum(100)
-        self.horizontalSlider_skewness.setValue(50)
-        self.horizontalSlider_skewness.setOrientation(Qt.Horizontal)
-
-        self.gridLayout.addWidget(self.horizontalSlider_skewness, 2, 1, 1, 2)
-
         self.horizontalSlider_shift = QSlider(self.groupBox_wavelet_customize)
         self.horizontalSlider_shift.setObjectName(u"horizontalSlider_shift")
-        self.horizontalSlider_shift.setMaximum(100)
-        self.horizontalSlider_shift.setValue(50)
+        self.horizontalSlider_shift.setMinimum(-50)
+        self.horizontalSlider_shift.setMaximum(50)
+        self.horizontalSlider_shift.setValue(10)
         self.horizontalSlider_shift.setOrientation(Qt.Horizontal)
 
         self.gridLayout.addWidget(self.horizontalSlider_shift, 1, 1, 1, 2)
-
-        self.horizontalSlider_mod = QSlider(self.groupBox_wavelet_customize)
-        self.horizontalSlider_mod.setObjectName(u"horizontalSlider_mod")
-        self.horizontalSlider_mod.setMaximum(100)
-        self.horizontalSlider_mod.setValue(50)
-        self.horizontalSlider_mod.setOrientation(Qt.Horizontal)
-
-        self.gridLayout.addWidget(self.horizontalSlider_mod, 0, 1, 1, 2)
 
 
         self.verticalLayout.addLayout(self.gridLayout)
 
 
         self.gridLayout_waveletparameters.addWidget(self.groupBox_wavelet_customize, 2, 0, 1, 3)
+
 
         self.verticalLayout_waveletparameters.addLayout(self.gridLayout_waveletparameters)
 
@@ -649,7 +660,7 @@ class Ui_MainWindow(object):
         self.spinBox_selectivity.setSingleStep(1)
         self.spinBox_selectivity.setValue(self.params['cwt']['selectivity'])
 
-        self.gridLayout_analyze_cwt.addWidget(self.spinBox_selectivity, 3, 2, 1, 1)
+        self.gridLayout_analyze_cwt.addWidget(self.spinBox_selectivity, 4, 2, 1, 1)
 
         self.doubleSpinBox_extent = QDoubleSpinBox(self.groupBox_analyze_cwt)
         self.doubleSpinBox_extent.setObjectName(u"doubleSpinBox_extent")
@@ -657,7 +668,7 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_extent.setSingleStep(0.100000000000000)
         self.doubleSpinBox_extent.setValue(self.params['cwt']['extent'])
 
-        self.gridLayout_analyze_cwt.addWidget(self.doubleSpinBox_extent, 3, 3, 1, 1)
+        self.gridLayout_analyze_cwt.addWidget(self.doubleSpinBox_extent, 4, 3, 1, 1)
 
         self.doubleSpinBox_threshold_cwt = QDoubleSpinBox(self.groupBox_analyze_cwt)
         self.doubleSpinBox_threshold_cwt.setObjectName(u"doubleSpinBox_threshold_cwt")
@@ -682,12 +693,12 @@ class Ui_MainWindow(object):
         self.label_selectivity = QLabel(self.groupBox_analyze_cwt)
         self.label_selectivity.setObjectName(u"label_selectivity")
 
-        self.gridLayout_analyze_cwt.addWidget(self.label_selectivity, 3, 0, 1, 2)
+        self.gridLayout_analyze_cwt.addWidget(self.label_selectivity, 4, 0, 1, 2)
 
         self.checkBox_show_cwt = QCheckBox(self.groupBox_analyze_cwt)
         self.checkBox_show_cwt.setObjectName(u"checkBox_show_cwt")
 
-        self.gridLayout_analyze_cwt.addWidget(self.checkBox_show_cwt, 4, 0, 1, 2)
+        self.gridLayout_analyze_cwt.addWidget(self.checkBox_show_cwt, 5, 0, 1, 2)
 
         self.doubleSpinBox_scales_max = QDoubleSpinBox(self.groupBox_analyze_cwt)
         self.doubleSpinBox_scales_max.setObjectName(u"doubleSpinBox_scales_max")
@@ -703,7 +714,7 @@ class Ui_MainWindow(object):
         self.checkBox_store_events.setObjectName(u"checkBox_store_events")
         self.checkBox_store_events.setChecked(True)
 
-        self.gridLayout_analyze_cwt.addWidget(self.checkBox_store_events, 5, 0, 1, 2)
+        self.gridLayout_analyze_cwt.addWidget(self.checkBox_store_events, 6, 0, 1, 2)
 
         self.pushButton_cwt = QPushButton(self.groupBox_analyze_cwt)
         self.pushButton_cwt.setObjectName(u"pushButton_cwt")
@@ -714,18 +725,18 @@ class Ui_MainWindow(object):
         self.pushButton_cwt.setSizePolicy(sizePolicy2)
         self.pushButton_cwt.setMinimumSize(QSize(0, 64))
 
-        self.gridLayout_analyze_cwt.addWidget(self.pushButton_cwt, 4, 2, 2, 2)
+        self.gridLayout_analyze_cwt.addWidget(self.pushButton_cwt, 5, 2, 2, 2)
 
         self.comboBox_showcwt = QComboBox(self.groupBox_analyze_cwt)
         self.comboBox_showcwt.setObjectName(u"comboBox_showcwt")
         self.comboBox_showcwt.setModel(self.targetsmodel)
 
-        self.gridLayout_analyze_cwt.addWidget(self.comboBox_showcwt, 6, 2, 1, 2)
+        self.gridLayout_analyze_cwt.addWidget(self.comboBox_showcwt, 7, 2, 1, 2)
 
         self.label_showcwt = QLabel(self.groupBox_analyze_cwt)
         self.label_showcwt.setObjectName(u"label_showcwt")
 
-        self.gridLayout_analyze_cwt.addWidget(self.label_showcwt, 6, 0, 1, 2)
+        self.gridLayout_analyze_cwt.addWidget(self.label_showcwt, 7, 0, 1, 2)
 
         self.label_scales = QLabel(self.groupBox_analyze_cwt)
         self.label_scales.setObjectName(u"label_scales")
@@ -742,6 +753,19 @@ class Ui_MainWindow(object):
 
         self.gridLayout_analyze_cwt.addWidget(self.doubleSpinBox_scales_min, 1, 1, 1, 1)
 
+        self.gridLayout_analyze_cwt.addWidget(self.spinBox_scales_count, 1, 3, 1, 1)
+
+        self.label_resolution_cwt = QLabel(self.groupBox_analyze_cwt)
+        self.label_resolution_cwt.setObjectName(u"label_resolution_cwt")
+
+        self.gridLayout_analyze_cwt.addWidget(self.label_resolution_cwt, 3, 0, 1, 2)
+
+        self.spinBox_resolution_cwt = QSpinBox(self.groupBox_analyze_cwt)
+        self.spinBox_resolution_cwt.setObjectName(u"spinBox_resolution_cwt")
+        self.spinBox_resolution_cwt.setMinimum(1)
+        self.spinBox_resolution_cwt.setValue(5)
+
+        self.gridLayout_analyze_cwt.addWidget(self.spinBox_resolution_cwt, 3, 2, 1, 2)
 
         self.verticalLayout_analyze_cwt.addLayout(self.gridLayout_analyze_cwt)
 
@@ -969,11 +993,11 @@ class Ui_MainWindow(object):
         self.comboBox_wavelet.currentTextChanged.connect(self.wavelet_update)
         self.comboBox_wavelet.setCurrentIndex(0)
         self.comboBox_target.currentTextChanged.connect(self.wavelet_load)
-        self.doubleSpinBox_mod.valueChanged.connect(lambda x: self.horizontalSlider_mod.setValue(100*float(x)))
-        self.horizontalSlider_mod.valueChanged.connect(lambda x: self.doubleSpinBox_mod.setValue(float(x)/100))
+        self.doubleSpinBox_mod.valueChanged.connect(lambda x: self.horizontalSlider_mod.setValue(10*float(x)))
+        self.horizontalSlider_mod.valueChanged.connect(lambda x: self.doubleSpinBox_mod.setValue(float(x)/10))
         self.horizontalSlider_mod.valueChanged.connect(self.wavelet_update)
-        self.doubleSpinBox_shift.valueChanged.connect(lambda x: self.horizontalSlider_shift.setValue(100*float(x)))
-        self.horizontalSlider_shift.valueChanged.connect(lambda x: self.doubleSpinBox_shift.setValue(float(x)/100))
+        self.doubleSpinBox_shift.valueChanged.connect(lambda x: self.horizontalSlider_shift.setValue(10*float(x)))
+        self.horizontalSlider_shift.valueChanged.connect(lambda x: self.doubleSpinBox_shift.setValue(float(x)/10))
         self.horizontalSlider_shift.valueChanged.connect(self.wavelet_update)
         self.doubleSpinBox_skewness.valueChanged.connect(lambda x: self.horizontalSlider_skewness.setValue(100*float(x)))
         self.horizontalSlider_skewness.valueChanged.connect(lambda x: self.doubleSpinBox_skewness.setValue(float(x)/100))
@@ -989,6 +1013,7 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_threshold_cwt.valueChanged.connect(self.update_params)
         self.spinBox_selectivity.valueChanged.connect(self.update_params)
         self.doubleSpinBox_extent.valueChanged.connect(self.update_params)
+        self.spinBox_resolution_cwt.valueChanged.connect(self.update_params)
 
         self.pushButton_save_events.clicked.connect(lambda: self.save_events(self.eventsmodel._data))
         
@@ -1053,7 +1078,9 @@ class Ui_MainWindow(object):
         self.checkBox_show_cwt.setText(QCoreApplication.translate("MainWindow", u"Show CWT", None))
         self.checkBox_store_events.setText(QCoreApplication.translate("MainWindow", u"Store Events", None))
         self.pushButton_cwt.setText(QCoreApplication.translate("MainWindow", u"Detect Events", None))
+        self.label_threshold_cwt.setText(QCoreApplication.translate("MainWindow", u"Threshold", None))
         self.label_showcwt.setText(QCoreApplication.translate("MainWindow", u"Show CWT for", None))
+        self.label_resolution_cwt.setText(QCoreApplication.translate("MainWindow", u"Resolution", None))
         self.label_scales.setText(QCoreApplication.translate("MainWindow", u"Scales [ms]: min, max, count", None))
         self.groupBox_analyze_shiftmultiply.setTitle(QCoreApplication.translate("MainWindow", u"Shift Multiply", None))
         self.label_minseparation.setText(QCoreApplication.translate("MainWindow", u"Min Separation [ms]", None))
@@ -1071,12 +1098,12 @@ class Ui_MainWindow(object):
     # retranslateUi
 	
     def config_init(self):
-        if os.path.exists("config.json"):
-            with open("config.json") as cf:
+        if os.path.exists(str(Path.home())+"/.SMDconfig"):
+            with open(str(Path.home())+"/.SMDconfig") as cf:
                 self.params = json.load(cf)
         else:
             self.params = {
-                'currentdir': '',
+                'currentdir': str(Path.home()),
                 'binsize': 1e-3,
                 'window': 10,
                 'buffer': 256,
@@ -1119,7 +1146,7 @@ class Ui_MainWindow(object):
                 self.params = json.load(cf)
                 self.load_params()
     def config_save(self):
-        with open('config.json', 'w') as cf:
+        with open(str(Path.home())+"/.SMDconfig", 'w') as cf:
             json.dump(self.params, cf, sort_keys=True, indent=4)
     def config_save_as(self):
         filename = QFileDialog.getSaveFileName(None,'Save Configurations As', self.params['currentdir'], 'JSON Files (*.json)')
@@ -1135,6 +1162,7 @@ class Ui_MainWindow(object):
         self.params['cwt']['scales']['max'] = self.doubleSpinBox_scales_max.value()*1e-3
         self.params['cwt']['scales']['count'] = self.spinBox_scales_count.value()
         self.params['cwt']['threshold'] = self.doubleSpinBox_threshold_cwt.value()
+        self.params['cwt']['resolution'] = self.spinBox_resolution_cwt.value()
         self.params['cwt']['selectivity'] = self.spinBox_selectivity.value()
         self.params['cwt']['extent'] = self.doubleSpinBox_extent.value()
         print(self.params['cwt'])
@@ -1144,6 +1172,7 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_scales_max.setValue(self.params['cwt']['scales']['max']*1e3)
         self.spinBox_scales_count.setValue(self.params['cwt']['scales']['count'])
         self.doubleSpinBox_threshold_cwt.setValue(self.params['cwt']['threshold'])
+        self.spinBox_resolution_cwt.setValue(self.params['cwt']['resolution'])
         self.spinBox_selectivity.setValue(self.params['cwt']['selectivity'])
         self.doubleSpinBox_extent.setValue(self.params['cwt']['extent'])
         self.doubleSpinBox_binsize.setValue(self.params['binsize'])
@@ -1269,7 +1298,7 @@ class Ui_MainWindow(object):
         skewness = self.doubleSpinBox_skewness.value()
         self.params['targets']['wavelet']['name'][n] = wavelet_name
         self.params['targets']['wavelet']['parameters'][n] = {'N':N, 'pattern':pattern, 'mod':mod, 'shift':shift, 'skewness':skewness}
-        wavelet = getattr(wlt, wavelet_name.lower().replace('-','_').replace(' ','_').replace('(','').replace(')',''))(N=N,pattern=pattern,mod=mod,shift=shift,skewness=skewness)
+        wavelet = getattr(wlt, wavelet_name.lower().replace('-','_').replace(' ','_').replace('(','').replace(')',''))(scale=self.params['cwt']['resolution'],**self.params['targets']['wavelet']['parameters'][n])
         if np.iscomplexobj(wavelet):
             self.waveletplot_line.plot(np.real(wavelet),pen=pg.mkPen(width=1,color='k'),clear=True)
             self.waveletplot_line.plot(np.imag(wavelet),pen=pg.mkPen(width=1,color=(30,30,30),style=QtCore.Qt.DashLine))

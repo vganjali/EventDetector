@@ -1,4 +1,5 @@
 import os
+import io
 import numpy as np
 import h5py as h5py
 import mmap as mmap
@@ -96,9 +97,16 @@ class ptu(QObject):
 		# self.started.emit(True)
 		while not os.path.exists(self.filename):
 			time.sleep(1)
-		with open(self.filename, mode='rb') as fin:
-			f_mmap = mmap.mmap(fin.fileno(),0,access=mmap.ACCESS_READ)
-			offset = int(f_mmap.find(str.encode('Header_End'))+48)
+		with io.FileIO(self.filename, mode='r') as fin:
+			while True:
+				try:
+					f_mmap = mmap.mmap(fin.fileno(),0,access=mmap.ACCESS_READ)
+					offset = int(f_mmap.find(str.encode('Header_End'))+48)
+					fin.seek(offset)
+					break
+				except Exception as excpt:
+					print(excpt)
+					time.sleep(0.5)
 			# print(os.path.getsize(self.filename))
 			while self.active:
 				try:
@@ -106,7 +114,8 @@ class ptu(QObject):
 				except Exception as e:
 					# print(e)
 					time.sleep(self.update_interval/1000)
-					records = np.frombuffer(f_mmap,dtype=np.uint32,count=-1,offset=offset)
+					# records = np.fromfile(fin,dtype=np.uint32,count=-1,offset=offset)
+					records = []
 				if len(records) > 0:
 					special = np.bitwise_and(np.right_shift(records,31), 0x01).astype(np.byte)
 					channel = np.bitwise_and(np.right_shift(records,25), 0x3F).astype(np.byte)

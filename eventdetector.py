@@ -156,6 +156,7 @@ def filter_events(all_events, selectivity, refine=True):
 
 def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt, log=False, plot=False):
     _events = np.empty((0,), dtype=d_type)
+    # _mean, _std = [], []
     if plot:
         _cwt_list = {}
         for i,k in enumerate(wavelets.keys()):
@@ -173,6 +174,7 @@ def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt,
                 for n, w in enumerate(wavelets[k]['wavelets']):
                     _cwt[n,:] = (0.5*np.correlate(signal, w, mode='same'))[pad:-pad]
                     _cwt[n,:] += np.abs(_cwt[n,:])
+                    # print(f'mean:{np.mean(_cwt[n,:])}, std:{np.std(_cwt[n,:])}')
                     _index, _ = find_peaks(_cwt[n,:], distance=wavelets[k]['N']*scales[n]/dt, height=thresh)
                     _events = np.append(_events, np.array(list(zip((slice_l+_index)*dt, \
                                                                     [scales[n]]*len(_index), \
@@ -216,6 +218,8 @@ def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt,
                     # print(np.max(_cwt))
                     _cwt += np.abs(_cwt)
 #                     _std = np.std(_cwt)
+                    # _mean.append(np.mean(_cwt))
+                    # _std.append(np.std(_cwt))
 #                     with thread_lock:
 #                         print(f"std at {scales[n]}: {_std}")
                     _index, _ = find_peaks(_cwt, distance=wavelets[k]['N']*scales[n]/dt, height=thresh)
@@ -225,6 +229,7 @@ def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt,
                                                                     [wavelets[k]['N']]*len(_index), \
                                                                     [i]*len(_index))), dtype=d_type), axis=0)
         # print(_events)
+        # print(f'mean:{np.mean(_mean)}, std:{np.mean(_std)}')
         return _events
 
 class eventdetector(QObject):
