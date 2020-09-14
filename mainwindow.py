@@ -154,7 +154,7 @@ class Ui_MainWindow(object):
         self.toolBox.setObjectName(u"toolBox")
         self.explorer_page = QWidget()
         self.explorer_page.setObjectName(u"explorer_page")
-        self.explorer_page.setGeometry(QRect(0, 0, 360, 501))
+        self.explorer_page.setGeometry(QRect(0, 0, 380, 501))
         self.verticalLayout_explorer = QVBoxLayout(self.explorer_page)
         self.verticalLayout_explorer.setObjectName(u"verticalLayout_explorer")
         self.verticalLayout_explorer.setContentsMargins(0, 0, 0, 0)
@@ -244,7 +244,7 @@ class Ui_MainWindow(object):
 
         self.device_page = QWidget()
         self.device_page.setObjectName(u"device_page")
-        self.device_page.setGeometry(QRect(0, 0, 292, 518))
+        self.device_page.setGeometry(QRect(0, 0, 380, 518))
         self.verticalLayout_fileinfo = QVBoxLayout(self.device_page)
         self.verticalLayout_fileinfo.setObjectName(u"verticalLayout_fileinfo")
         self.verticalLayout_fileinfo.setContentsMargins(0, 0, 0, 10)
@@ -387,7 +387,7 @@ class Ui_MainWindow(object):
         self.toolBox.addItem(self.device_page, u"Device")
         self.target_page = QWidget()
         self.target_page.setObjectName(u"target_page")
-        self.target_page.setGeometry(QRect(0, 0, 360, 501))
+        self.target_page.setGeometry(QRect(0, 0, 380, 501))
         self.verticalLayout_target = QVBoxLayout(self.target_page)
         self.verticalLayout_target.setObjectName(u"verticalLayout_target")
         self.verticalLayout_target.setContentsMargins(0, 0, 0, 0)
@@ -485,7 +485,7 @@ class Ui_MainWindow(object):
         self.toolBox.addItem(self.target_page, u"Target")
         self.wavelet_page = QWidget()
         self.wavelet_page.setObjectName(u"wavelet_page")
-        self.wavelet_page.setGeometry(QRect(0, 0, 360, 501))
+        self.wavelet_page.setGeometry(QRect(0, 0, 380, 501))
         self.verticalLayout_wavelet = QVBoxLayout(self.wavelet_page)
         self.verticalLayout_wavelet.setObjectName(u"verticalLayout_wavelet")
         self.verticalLayout_wavelet.setContentsMargins(0, 0, 0, 0)
@@ -534,7 +534,7 @@ class Ui_MainWindow(object):
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.comboBox_wavelet.sizePolicy().hasHeightForWidth())
         self.comboBox_wavelet.setSizePolicy(sizePolicy1)
-        [self.comboBox_wavelet.addItem(w) for w in ['Multi-spot Gaussian', 'Multi-spot Gaussian (encoded)','Morlet', 'Morlet_Complex', 'Ricker']]
+        [self.comboBox_wavelet.addItem(w) for w in ['MSG', 'MSG (encoded)','Morlet', 'Morlet_Complex', 'Ricker']]
 
         self.gridLayout_waveletparameters.addWidget(self.comboBox_wavelet, 1, 1, 1, 1)
 
@@ -642,7 +642,7 @@ class Ui_MainWindow(object):
         self.toolBox.addItem(self.wavelet_page, u"Wavelet")
         self.analyze_page = QWidget()
         self.analyze_page.setObjectName(u"analyze_page")
-        self.analyze_page.setGeometry(QRect(0, 0, 360, 501))
+        self.analyze_page.setGeometry(QRect(0, 0, 380, 501))
         self.verticalLayout_analyze = QVBoxLayout(self.analyze_page)
         self.verticalLayout_analyze.setObjectName(u"verticalLayout_analyze")
         self.verticalLayout_analyze.setContentsMargins(0, 0, 0, 0)
@@ -831,7 +831,7 @@ class Ui_MainWindow(object):
         self.toolBox.addItem(self.analyze_page, u"Analyze")
         self.results_page = QWidget()
         self.results_page.setObjectName(u"results_page")
-        self.results_page.setGeometry(QRect(0, 0, 286, 501))
+        self.results_page.setGeometry(QRect(0, 0, 380, 501))
         self.verticalLayout_2 = QVBoxLayout(self.results_page)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.verticalLayout_2.setContentsMargins(0, 6, 0, 0)
@@ -1205,7 +1205,7 @@ class Ui_MainWindow(object):
             'active':True,
             'note':'',
             'wavelet':{
-                'name':'Multi-spot Gaussian',
+                'name':'MSG',
                 'parameters':{'N':6, 'pattern':'6', 'mod':0.5,'shift':1,'skewness':0.5}
             }
         }
@@ -1286,7 +1286,7 @@ class Ui_MainWindow(object):
         n = self.comboBox_target.currentIndex()
         wavelet_name = self.comboBox_wavelet.currentText()
         pattern = self.lineEdit_N.text()
-        if wavelet_name == 'Multi-spot Gaussian (encoded)':
+        if wavelet_name == 'MSG (encoded)':
             N = len(pattern)
         else:
             N = int(pattern)
