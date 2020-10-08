@@ -14,7 +14,7 @@ setup(
     keywords=['cwt','SMD','gui'],
     packages=['cwted'],
     include_package_data=True,
-    install_requires=['h5py>=2.10.0','matplotlib>=3.2.2','pyside2>=5.13.2','pyqtgraph>=0.11.0','numpy>=1.18.5','pandas>=1.0.5','scipy>=1.5.0'],
+    install_requires=['requests>=2.22.0','h5py>=2.10.0','matplotlib>=3.2.2','pyside2>=5.13.2','pyqtgraph>=0.11.0','numpy>=1.18.5','pandas>=1.0.5','scipy>=1.5.0'],
     python_requires='>=3.7',
     classifiers=[
         'License :: MIT License',
