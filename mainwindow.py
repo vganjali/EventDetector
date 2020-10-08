@@ -69,13 +69,22 @@ class Ui_MainWindow(object):
         self.widget_plot_timetrace.setObjectName(u"widget_plot_timetrace")
         self.widget_plot_timetrace.setAntialiasing(False)
         self.widget_plot_timetrace.setCursor(QCursor(Qt.CrossCursor))
-        self.plot_line = pg.PlotItem(parrent=self.widget_plot_timetrace)
+        self.plot_line = pg.PlotItem()
         self.widget_plot_timetrace.addItem(self.plot_line)
+        self.scatter_events_time_vb = pg.ViewBox()
+        self.plot_line.scene().addItem(self.scatter_events_time_vb)
+        self.plot_line.vb.setZValue(-1)
+        self.scatter_events_time_vb.setZValue(1)
+        self.scatter_events_time_vb.setGeometry(self.plot_line.vb.sceneBoundingRect())
+        self.plot_line.getAxis('right').linkToView(self.scatter_events_time_vb)
+        self.scatter_events_time_vb.setXLink(self.plot_line)
+        # self.scatter_events_time_vb.setYLink(self.plot_line)
         self.plot_line.setDownsampling(auto=True)
         self.plot_line.setClipToView(clip=True)
         self.plot_line.setLabels(left='Intensity [Counts/s]', bottom='Time [s]')
-        # self.plot_line.enableAutoRange(self.plot_line.vb.YAxis,True)
-        self.plot_line.disableAutoRange()
+        # self.timetrace_ax.setLabels(left='Intensity [Counts/s]', bottom='Time [s]')
+        # # self.plot_line.enableAutoRange(self.plot_line.vb.YAxis,True)
+        # self.plot_line.disableAutoRange()
 
         self.widget_plot_cwt = pg.GraphicsLayoutWidget(parent=self.splitter_plot, show=True)
         self.widget_plot_cwt.setObjectName(u"widget_plot_cwt")
@@ -86,15 +95,7 @@ class Ui_MainWindow(object):
         self.scatter_events_vb = pg.ViewBox()
         self.image_cwt = {}
         self.scatter_events = {}
-        # import numpy as np
-        # self.image_cwt = pg.ImageItem(np.random.random((100,20)))
-        # from matplotlib import cm
-        # pos, rgba_colors = zip(*cmapToColormap(cm.cubehelix))
-        # self.cmap = pg.ColorMap(pos, rgba_colors)
-        # self.image_cwt.setLookupTable(cmap.getLookupTable())
-        # self.image_cwt.setAutoDownsample(True)
-        # self.scatter_events = pg.ScatterPlotItem([1,4,55,12],[4,1,6,3],
-        #                         symbol='s',pen='g',brush=None,pxMode=True, size=6, name='ss')
+        self.scatter_events_time = {}
         self.image_cwt_ax = self.widget_plot_cwt.addPlot()
         # self.image_cwt.setParentItem(self.image_cwt_ax)
         # self.scatter_events.setParentItem(self.image_cwt_ax)
@@ -980,8 +981,9 @@ class Ui_MainWindow(object):
         self.actionExit.triggered.connect(MainWindow.close)
         self.treeView_explorer.clicked.connect(self.get_file_list)
         self.plot_line.vb.sigXRangeChanged.connect(self.setYRange)
+        self.plot_line.vb.sigYRangeChanged.connect(self.setYRange_time_vb)
+        self.plot_line.vb.sigResized.connect(self.update_timetrace_vb)
         self.image_cwt_ax.vb.sigYRangeChanged.connect(self.setYRange_cwt_vb)
-        self.image_cwt_ax.vb.sigResized.connect(self.update_cwt_vb)
         self.image_cwt_ax.vb.sigResized.connect(self.update_cwt_vb)
         self.comboBox_showcwt.currentTextChanged.connect(self.toggle_cwt_image)
         self.pushButton_targetadd.clicked.connect(self.target_add)
@@ -1188,9 +1190,17 @@ class Ui_MainWindow(object):
     def setYRange(self, *arg):
         self.plot_line.enableAutoRange(axis='y')
         self.plot_line.setAutoVisible(y=True)
+        self.scatter_events_time_vb.setYRange(*self.plot_line.vb.viewRange()[1])
+
+    def setYRange_time_vb(self, *arg):
+        self.scatter_events_time_vb.setYRange(*self.plot_line.vb.viewRange()[1])
 
     def setYRange_cwt_vb(self, *arg):
         self.image_cwt_vb.setYRange(arg[-1][0],arg[-1][1])
+
+    def update_timetrace_vb(self):
+        self.scatter_events_time_vb.setGeometry(self.plot_line.vb.sceneBoundingRect())
+        self.scatter_events_time_vb.setYRange(*self.plot_line.vb.viewRange()[1])
 
     def update_cwt_vb(self):
         self.image_cwt_vb.setGeometry(self.image_cwt_ax.vb.sceneBoundingRect())
@@ -1319,27 +1329,31 @@ class Ui_MainWindow(object):
         self.ax_plotcounts = self.canvas_plotsummary.figure.add_subplot(self.gs_summaryplot[0,:])
         self.ax_rate = self.canvas_plotsummary.figure.add_subplot(self.gs_summaryplot[1,:])
         self.ax_velocity = self.canvas_plotsummary.figure.add_subplot(self.gs_summaryplot[2,:])
-        names = self.params['targets']['name']
+        if len(events) == 0:
+            return
+        names = []
+        labels = []
+        colors = []
+        _counts = []
+        ticks = []
+        for n,name in enumerate(self.params['targets']['name']):
+            names.append(name)
+            labels.append(n)
+            colors.append([float(c)/255 for c in eval(self.params['targets']['color'][n].split('rgb')[1])])
+            _counts.append(np.count_nonzero(events['label'] == n))
+            ticks.append(f'{name} [{_counts[-1]}]')
         self.df = pd.DataFrame(events)
         self.df['velocity'] = 5e-6/self.df['scale']*1e2
         self.df['intensity'] = self.df['coeff']
         # df['intensity'] = df['coeff']/df['scale']/df['N']
         # print(df.describe())
-        _counts = []
-        colors = []
-        ticks = ['']*len(names)
-        for n,c in enumerate(self.params['targets']['color']):
-            colors.append([float(c)/255 for c in eval(c.split('rgb')[1])])
-            _counts.append(np.count_nonzero(events['label'] == n))
-        for n,name in enumerate(names):
-            ticks[n] = f'{name} [{_counts[n]}]'
 
         self.ax_plotcounts.barh(range(len(_counts)), _counts, align='center', color=colors)
         # [self.ax_plotcounts.text(y=y, s=f' {c} ', va='center', bbox=dict(boxstyle="round",ec=(0., 0., 0.),fc=(0., 0., 0.)), **text[y]) for y,c in enumerate(_counts)]
-        self.ax_plotcounts.set_yticks(range(len(_counts)))
+        self.ax_plotcounts.set_yticks(range(len(ticks)))
         self.ax_plotcounts.set_yticklabels(ticks)
         self.ax_plotcounts.set_xlabel('Count')
-        self.ax_rate.hist([events[events['label']==n]['time'] for n in range(len(_counts))], rwidth=0.8, 
+        self.ax_rate.hist([events[events['label']==l]['time'] for l in labels], rwidth=0.8, 
                             bins=20, density=False, histtype='bar', stacked=True, color=colors, label=names)
         self.ax_rate.set_xlabel('Time [s]')
         self.ax_rate.set_ylabel(f"Events/{(np.max(events['time'])-np.min(events['time']))/20:.3f}")
@@ -1368,19 +1382,24 @@ class Ui_MainWindow(object):
         self.canvas_plotdist.figure.clf()
         self.canvas_plotjointdist.figure.clf()
         self.ax_dist = self.canvas_plotdist.figure.subplots(2,1)
+        if len(events) == 0:
+            return
         # self.df = pd.DataFrame(events)
         # self.df['velocity'] = 5e-6/self.df['scale']*1e2
         # self.df['intensity'] = self.df['coeff']
         # self.df['class'] = self.df['label']
         self.df['scale'] = self.df['scale']*1e3
         # self.df['label'] = np.array(self.params['targets']['name'])[self.df['label']]
+        names = []
+        labels = []
         colors = []
-        names = self.params['targets']['name']
-        for n,c in enumerate(self.params['targets']['color']):
-            colors.append([float(c)/255 for c in eval(c.split('rgb')[1])])
-        self.ax_dist[0].hist([self.df[self.df['label']==n]['intensity'] for n in range(len(names))], rwidth=0.8, 
+        for n,name in enumerate(self.params['targets']['name']):
+            names.append(name)
+            labels.append(n)
+            colors.append([float(c)/255 for c in eval(self.params['targets']['color'][n].split('rgb')[1])])
+        self.ax_dist[0].hist([self.df[self.df['label']==l]['intensity'] for l in labels], rwidth=0.8, 
                         bins=20, density=False, histtype='bar', stacked=False, color=colors, label=names)
-        self.ax_dist[1].hist([self.df[self.df['label']==n]['velocity'] for n in range(len(names))], rwidth=0.8, 
+        self.ax_dist[1].hist([self.df[self.df['label']==l]['velocity'] for l in labels], rwidth=0.8, 
                         bins=20, density=False, histtype='bar',stacked=False, color=colors, label=names)
         self.ax_dist[0].set_xlabel('Intensity [a.u.]')
         self.ax_dist[1].set_xlabel('Velocity [cm/s]')

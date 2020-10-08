@@ -1,5 +1,5 @@
 """
-version:0.1.0
+version:0.1.1
 """
 import sys
 import os
@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
 		self.eventdetector.drawcwt.connect(self.update_cwt_plot)
 		self.ui.listWidget_files.clicked.connect(lambda sig: self.read_file(filename=sig,update=True,relim=True))
 		self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=False)
-		self.ui.pushButton_realtime.clicked.connect(self.time_plot_rt)
+		self.ui.pushButton_realtime.clicked.connect(self.detect_events_rt)
 		self.ui.doubleSpinBox_binsize.editingFinished.connect(lambda: self.read_file(filename=self.ui.listWidget_files.currentIndex(),update=True,relim=False))
 		self.ui.pushButton_cwt.clicked.connect(self.detect_events)
 		# with h5py.File("C:/Users/vahid/.vaex/data/helmi-dezeeuw-2000-FeH-v2-10percent.hdf5",'r') as f:
@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
 				(self.ui.params['binsize'] != self.ptufile.binsize)) and not self.read_file_thread.is_alive():
 				self.ptufile.filename = self.ui.params['currentdir']+filename.data()
 				self.ptufile.binsize = self.ui.params['binsize']
-				self.ptufile.buffer = int(self.ui.params['buffer']*1024*1024/4)
+				self.ptufile.buffersize = int(self.ui.params['buffer']*1024*1024/4)
 				self.ptufile.active = True
 				self.read_file_thread = threading.Thread(target=self.ptufile.processHT2, args=(update,relim,),daemon=False)
 				# print(f"binning {ptufile.filename}")
@@ -83,7 +83,7 @@ class MainWindow(QMainWindow):
 				# self.ui.params['window'] = self.ui.doubleSpinBox_windowsize.value()
 				self.ptufile.filename = self.ui.params['currentdir']+self.ui.lineEdit_filename.text()+'.ptu'
 				self.ptufile.binsize = self.ui.params['binsize']
-				self.ptufile.buffer = int(self.ui.params['buffer']*1024*1024/20/4)
+				self.ptufile.buffersize = int(self.ui.params['buffer']*1024*1024/20/4)
 				self.ptufile.active = True
 				while not self.ptufile.queue.empty():
 					self.ptufile.queue.get()
@@ -132,7 +132,7 @@ class MainWindow(QMainWindow):
 		# [print(k,len(_wavelets[k]['wavelets'])) for k in _wavelets.keys()]
 		self.ui.params['cwt']['window'] = {'l':list(self.ui.plot_line.getAxis('bottom').range)[0],'r':list(self.ui.plot_line.getAxis('bottom').range)[1]}
 		self.ptufile.binsize = self.ui.params['cwt']['scales']['min']/self.ui.params['cwt']['resolution']
-		self.ptufile.buffer = int(self.ui.params['buffer']*1024*1024/4)
+		self.ptufile.buffersize = int(self.ui.params['buffer']*1024*1024/4)
 		for k in self.ui.params['cwt']:
 			try:
 				setattr(self.eventdetector, k, self.ui.params['cwt'][k])
@@ -151,13 +151,80 @@ class MainWindow(QMainWindow):
 		self.ui.progressBar.reset()
 		self.ui.image_cwt = {name:[] for name in self.ui.params['targets']['name']}
 		self.ui.scatter_events = {name:[] for name in self.ui.params['targets']['name']}
+		self.ui.scatter_events_time = {name:[] for name in self.ui.params['targets']['name']}
+		# print(self.ui.plot_line.removeItem(0))
 		self.ui.image_cwt_vb.clear()
 		self.ui.scatter_events_vb.clear()
+		self.ui.scatter_events_time_vb.clear()
+		for n,c in enumerate(self.ui.params['targets']['color']):
+			self.ui.scatter_events[self.ui.params['targets']['name'][n]] = \
+				pg.ScatterPlotItem([],[],symbol='s',pen=pg.mkPen(color=eval(c.split('rgb')[-1]),width=2),brush=None,pxMode=True, size=10, 
+				name=self.ui.params['targets']['name'][n])
+			self.ui.scatter_events_time[self.ui.params['targets']['name'][n]] = \
+				pg.ScatterPlotItem([],[],symbol='+',pen=pg.mkPen(color=eval(c.split('rgb')[-1]),width=2),brush=None,pxMode=True, size=10, 
+				name=self.ui.params['targets']['name'][n])
+			self.ui.scatter_events[self.ui.params['targets']['name'][n]].setZValue(99)
+			self.ui.scatter_events_time[self.ui.params['targets']['name'][n]].setZValue(99)
+			self.ui.scatter_events_vb.addItem(self.ui.scatter_events[self.ui.params['targets']['name'][n]])
+			self.ui.scatter_events_time_vb.addItem(self.ui.scatter_events_time[self.ui.params['targets']['name'][n]])
+		# print(self.ui.plot_line.listDataItems())
 		self.detect_events_thread.start()
 		# print(f"binning {ptufile.filename}")
 		# events = self.eventdetector.analyze_trace(os.path.splitext(self.ptufile.filename)[0], _wavelets, **self.ui.params['cwt'])
 		# print(events)
 		# self.statusBar().showMessage('Idle')
+
+	def detect_events_rt(self):
+		try:
+			if not self.read_file_thread.is_alive():
+				# print('start')
+				# self.ui.params['binsize'] = self.ui.doubleSpinBox_binsize.value()*1e-3
+				# self.ui.params['window'] = self.ui.doubleSpinBox_windowsize.value()
+				if self.ui.params['cwt']['log']:
+					scales = np.logspace(np.log10(self.ui.params['cwt']['scales']['min']), np.log10(self.ui.params['cwt']['scales']['max']), self.ui.params['cwt']['scales']['count'], dtype=np.float64)
+				else:
+					scales = np.linspace(self.ui.params['cwt']['scales']['min'], self.ui.params['cwt']['scales']['max'], self.ui.params['cwt']['scales']['count'], dtype=np.float64)
+				self.ptufile.binsizes = [int(scale/self.ui.params['cwt']['resolution']/self.ptufile.globres) for scale in scales]
+				self.ptufile.filename = self.ui.params['currentdir']+self.ui.lineEdit_filename.text()+'.ptu'
+				self.ptufile.binsize = self.ui.params['binsize']
+				self.ptufile.buffersize = int(self.ui.params['buffer']*1024*1024/20/4/self.ui.params['cwt']['scales']['count'])
+				self.ptufile.active = True
+				while not self.ptufile.queue.empty():
+					self.ptufile.queue.get()
+				self.ui.plot_line.setLabel('left',f"Intensity [cnts/{self.ptufile.binsize*1e3:g}ms]")
+				self.ui.plot_line.disableAutoRange()
+				self.rt_plot_line = self.ui.plot_line.plot(
+					[],
+					[],
+					pen=pg.mkPen(color='b'),
+					clear=True,
+					name='CH 1'
+					# fillLevel=0,
+					# fillBrush=pg.mkBrush(color='b'),
+					)
+				self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=True)
+				self.read_file_thread.start()
+				self.ptufile.updateplot_timer.start()
+				self.ui.pushButton_realtime.setText('Stop')
+				self.ui.listWidget_files.setEnabled(False)
+				self.statusBar().showMessage('Realtime Plotting...')
+			else:
+				# print('stopped')
+				self.ptufile.active = False
+				self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=False)
+				self.ptufile.updateplot_timer.stop()
+				while not self.ptufile.queue.empty():
+					self.ptufile.queue.get()
+				self.ui.pushButton_realtime.setText('Start')
+				self.ui.listWidget_files.setEnabled(True)
+				self.statusBar().showMessage('Idle')
+			# self.plot_thread = threading.Thread(target=self.update_time_plot_worker, args=(),daemon=False).start()
+		except Exception as e:
+			print(e)
+			while not self.ptufile.queue.empty():
+				self.ptufile.queue.get()
+			self.read_file_thread = threading.Thread(target=self.ptufile.processHT2_rt, args=(),daemon=False)
+			self.ptufile.active = False
 
 	def generate_wavelets(self):
 		_wavelets = {}
@@ -168,11 +235,14 @@ class MainWindow(QMainWindow):
 			scales = np.linspace(self.ui.params['cwt']['scales']['min'], self.ui.params['cwt']['scales']['max'], self.ui.params['cwt']['scales']['count'], dtype=np.float64)
 		# print(scales)
 		for n,name in enumerate(self.ui.params['targets']['name']):
+			wname = self.ui.params['targets']['wavelet']['name'][n]
+			args = self.ui.params['targets']['wavelet']['parameters'][n]
 			if self.ui.params['targets']['active'][n]:
-				wname = self.ui.params['targets']['wavelet']['name'][n]
-				args = self.ui.params['targets']['wavelet']['parameters'][n]
 				_wavelets[name] = {'N': args['N'],
 				'wavelets': [getattr(wavelet, wname.lower().replace('-','_').replace(' ','_').replace('(','').replace(')',''))(s, dt=_dt, **args) for s in scales]}
+			else:
+				_wavelets[name] = {'N': args['N'],
+				'wavelets': [[0]]}
 		return _wavelets
 
 	def update_statusbar(self, signal):
@@ -191,7 +261,8 @@ class MainWindow(QMainWindow):
 				f[f"{self.ptufile.binsize:010.6f}"]['count'][:],
 				pen=pg.mkPen(color='b'),
 				clear=True,
-				name='CH 1'
+				name='CH 1',
+				zvalue=-1
 				# fillLevel=0,
 				# fillBrush=pg.mkBrush(color='b'),
 				)
@@ -215,13 +286,15 @@ class MainWindow(QMainWindow):
 			# 	# fillLevel=0,
 			# 	# fillBrush=pg.mkBrush(color='b'),
 			# 	)
+			print(len(buffer['count'][0]))
 			self.rt_plot_line.setData(
-				np.append(self.rt_plot_line.xData,buffer['time']*1e-12),
-				np.append(self.rt_plot_line.yData,buffer['count']))
+				np.append(self.rt_plot_line.xData,buffer['time'][0]*1e-12),
+				np.append(self.rt_plot_line.yData,buffer['count'][0]))
+
 			# self.ui.plot_line.setDownsampling(ds=True, auto=False, mode='mean')
 			# self.ui.plot_line.setClipToView(clip=True)
 			self.ptufile.queue.task_done()
-			self.ui.plot_line.setXRange(max(0,buffer['time'][-1]*1e-12-self.ui.params['window']),buffer['time'][-1]*1e-12)
+			self.ui.plot_line.setXRange(max(0,buffer['time'][0][-1]*1e-12-self.ui.params['window']),buffer['time'][0][-1]*1e-12)
 			self.ui.setYRange()
 		# elif not self.read_file_thread.is_alive():
 		# 	self.ptufile.updateplot_timer.stop()
@@ -277,12 +350,12 @@ class MainWindow(QMainWindow):
 		# colors = ['r','g','b']
 		events.sort(order='time')
 		for n,c in enumerate(self.ui.params['targets']['color']):
-			self.ui.scatter_events[self.ui.params['targets']['name'][n]] = \
-				pg.ScatterPlotItem(events[events['label']==n]['time'],np.log10(events[events['label']==n]['scale']*1e3),
-				symbol='s',pen=pg.mkPen(color=eval(c.split('rgb')[-1]),width=2),brush=None,pxMode=True, size=10, 
-				name=self.ui.params['targets']['name'][n])
-			self.ui.scatter_events[self.ui.params['targets']['name'][n]].setZValue(99)
-			self.ui.scatter_events_vb.addItem(self.ui.scatter_events[self.ui.params['targets']['name'][n]])
+			self.ui.scatter_events[self.ui.params['targets']['name'][n]].setData(events[events['label']==n]['time'],np.log10(events[events['label']==n]['scale']*1e3))
+			self.ui.scatter_events_time[self.ui.params['targets']['name'][n]].setData(events[events['label']==n]['time'],events[events['label']==n]['coeff'])
+			# self.ui.scatter_events[self.ui.params['targets']['name'][n]].setZValue(99)
+			# self.ui.scatter_events_time[self.ui.params['targets']['name'][n]].setZValue(99)
+			# self.ui.scatter_events_vb.addItem(self.ui.scatter_events[self.ui.params['targets']['name'][n]])
+			# self.ui.plot_line.getViewBox().addItem(self.ui.scatter_events_time[self.ui.params['targets']['name'][n]])
 		self.ui.image_cwt_ax.addLegend()
 		# self.ui.image_cwt_ax.getAxis('left').setLogMode(False)
 		self.ui.scatter_events_vb.setLimits(yMin=np.log10(self.ui.params['cwt']['scales']['min']*1e3), 
