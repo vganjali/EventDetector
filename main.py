@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
 				(self.ui.params['binsize'] != self.ptufile.binsize)) and not self.read_file_thread.is_alive():
 				self.ptufile.filename = self.ui.params['currentdir']+filename.data()
 				self.ptufile.binsize = self.ui.params['binsize']
-				self.ptufile.buffersize = int(self.ui.params['buffer']*1024*1024/4)
+				self.ptufile.buffer = int(self.ui.params['buffer']*1024*1024/4)
 				self.ptufile.active = True
 				self.read_file_thread = threading.Thread(target=self.ptufile.processHT2, args=(update,relim,),daemon=False)
 				# print(f"binning {ptufile.filename}")
@@ -132,7 +132,7 @@ class MainWindow(QMainWindow):
 		# [print(k,len(_wavelets[k]['wavelets'])) for k in _wavelets.keys()]
 		self.ui.params['cwt']['window'] = {'l':list(self.ui.plot_line.getAxis('bottom').range)[0],'r':list(self.ui.plot_line.getAxis('bottom').range)[1]}
 		self.ptufile.binsize = self.ui.params['cwt']['scales']['min']/self.ui.params['cwt']['resolution']
-		self.ptufile.buffersize = int(self.ui.params['buffer']*1024*1024/4)
+		self.ptufile.buffer = int(self.ui.params['buffer']*1024*1024/4)
 		for k in self.ui.params['cwt']:
 			try:
 				setattr(self.eventdetector, k, self.ui.params['cwt'][k])
