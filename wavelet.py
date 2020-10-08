@@ -58,7 +58,7 @@ def skew_normal(x, mu, sigma, alpha=0):
     _PHI = 1/2*(1+erf(alpha*(x-xi)/sigma/np.sqrt(2)))
     return 2/sigma*phi*_PHI
 
-def multi_spot_gaussian(scale=10, N=6, pattern='6', window=1, mplx_ratio=1, weight=1, mod=0.5, shift=1, skewness=1, is_complex=False, dt=1, mf=False):
+def msg(scale=10, N=6, pattern='6', window=1, mplx_ratio=1, weight=1, mod=0.5, shift=1, skewness=1, is_complex=False, dt=1, mf=False):
     N = int(N)
     if (type(N) != list):
         N = [N]
@@ -106,7 +106,7 @@ def multi_spot_gaussian(scale=10, N=6, pattern='6', window=1, mplx_ratio=1, weig
 #     s = s/np.sqrt(scale)
     return s
 
-def multi_spot_gaussian_encoded(scale=10, N=4, pattern='1201', window=1, mod=0.5, shift=1, skewness=1, is_complex=False, dt=1, mf=False):
+def msg_encoded(scale=10, N=4, pattern='1201', window=1, mod=0.5, shift=1, skewness=1, is_complex=False, dt=1, mf=False):
     if (type(N) != list):
         N = [N]
     if (type(pattern) != list):
