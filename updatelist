@@ -1,1 +1,9 @@
-{'files':['main.py','mainwindow.py','ptu.py','eventdetector.py','wavelet.py']}
+{
+    'files': [
+        'main.py',
+        'mainwindow.py',
+        'ptu.py',
+        'eventdetector.py',
+        'wavelet.py'
+    ]
+}
