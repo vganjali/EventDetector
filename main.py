@@ -1,5 +1,5 @@
 """
-version:0.1.1
+version:0.1.0
 """
 import sys
 import os
@@ -397,21 +397,25 @@ if __name__ == '__main__':
 		print('Updates are available')
 		ret = QMessageBox.information(
 			None,"Update",
-			"Updates are available.\nDo you want to download?",
+			"Updates are available.\nDo you want to update?",
 			QMessageBox.Yes | QMessageBox.No,
 			QMessageBox.Yes
 		)
 		if ret == QMessageBox.Yes:
 			from pathlib import Path
-			file_list = ['main.py','mainwindow.py','ptu.py','eventdetector.py','wavelet.py','splash.png']
-			for f in file_list:
-				r = requests.get(f'https://raw.github.com/vganjali/EventDetector/realtime/{f}',timeout=1)
-				with open(f'{str(Path.home())}/Downloads/{f}', 'wb') as f:
+			ul = requests.get(f'https://raw.github.com/vganjali/EventDetector/master/updatelist',timeout=1)
+			update_list = ul.json()
+			for f in update_list['files']:
+				print(f)
+				r = requests.get(f'https://raw.github.com/vganjali/EventDetector/master/{f}',timeout=3)
+				with open(f'C:/Users/Public/appdata/local/SMD Analysis/{f}', 'wb') as f:
 					f.write(r.content)
 			ret = QMessageBox.information(
 				None,"Update",
-				"Files downloaded to 'home/Downloads/\nreplace the installation files 'C:/program files/SMD Analysis'"
+				"SMD Analysis updated.\nPlease restart the program."
 			)
+			splash.finish(main_window)
+			sys.exit(app.exec_())
 			# Save was clicked
 		elif ret == QMessageBox.No:
 			print('')

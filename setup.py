@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='CWT Event Detector',
-    version='0.1.0',
+    version='0.1.1',
     url='https://github.com/vganjali/EventDetector',
     license='MIT',
     author='Vahid Ganjalizadeh',
