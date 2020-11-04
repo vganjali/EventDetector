@@ -125,7 +125,7 @@ class timeseries(QObject):
             ds_count.resize((int(bin_edge['time']+1),))
             ds_count[bin_edge['time']] = bin_edge['count']
             ds_time.resize((ds_count.size,))
-            ds_time[:] = np.arange(ds_time.size, dtype=np.uint64)[:]*_dt*self.ptu_globres
+            ds_time[:] = np.arange(ds_time.size, dtype=np.uint64)*_dt*self.ptu_globres
             self.dt = _dt*self.ptu_globres
             # print('trace length:',ds_count.size*self.dt,'[s]')
         return

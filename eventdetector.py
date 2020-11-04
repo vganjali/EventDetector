@@ -335,7 +335,7 @@ class eventdetector(QObject):
                             _result = _f.result()
                             _events.append(_result[0])
                             _cwt_list = [_result[1],_result[2]+signal['time'][_xlim[0]],_result[3]]
-                            # self.drawcwt.emit(_cwt_list)
+                            self.drawcwt.emit(_cwt_list)
                         else:
                             _events.append(_f.result())
                         n += 1
