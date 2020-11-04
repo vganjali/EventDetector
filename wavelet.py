@@ -3,6 +3,7 @@ from scipy.special import erf
 
 def ricker(scale=10, N=1, pattern=None, window=1, mod=None, shift=None, skewness=None, dt=1):
     resolution = scale/dt
+    print(resolution)
     length = int((10*window)*resolution)
     a = resolution/1.25187536
     t = np.arange(length)

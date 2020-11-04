@@ -146,6 +146,9 @@ class Ui_MainWindow(object):
         self.dockWidget_controlpanel.setObjectName(u"dockWidget_controlpanel")
         self.dockWidget_controlpanel.setFeatures(QDockWidget.DockWidgetFloatable|QDockWidget.DockWidgetMovable|QDockWidget.DockWidgetVerticalTitleBar)
         self.dockWidget_controlpanel.setAllowedAreas(Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
+        self.dockWidget_controlpanel.setFloating(True)
+        self.dockWidget_controlpanel.setMinimumSize(280,400)
+        self.dockWidget_controlpanel.setGeometry(10,40,280,800)
         self.dockWidget_controlpanel_Contents = QWidget()
         self.dockWidget_controlpanel_Contents.setObjectName(u"dockWidget_controlpanel_Contents")
         self.verticalLayout_binningandwindow_2 = QVBoxLayout(self.dockWidget_controlpanel_Contents)
@@ -910,6 +913,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_3.addWidget(self.pushButton_save_events)
 
+        self.pushButton_info_events = QPushButton(self.tab_list)
+        self.pushButton_info_events.setObjectName(u"pushButton_info_events")
+
+        self.verticalLayout_3.addWidget(self.pushButton_info_events)
+
         self.tabWidget.addTab(self.tab_list, "")
 
         self.verticalLayout_2.addWidget(self.tabWidget)
@@ -932,9 +940,11 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_binsize = QDoubleSpinBox(self.groupBox_binning_and_window)
         self.doubleSpinBox_binsize.setObjectName(u"doubleSpinBox_binsize")
         self.doubleSpinBox_binsize.setDecimals(3)
+        self.doubleSpinBox_binsize.setKeyboardTracking(False)
         self.doubleSpinBox_binsize.setMaximum(100000.000000000000000)
         self.doubleSpinBox_binsize.setSingleStep(0.010000000000000)
         self.doubleSpinBox_binsize.setValue(1.000000000000000)
+        self.doubleSpinBox_binsize.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         self.gridLayout_2.addWidget(self.doubleSpinBox_binsize, 0, 1, 1, 1)
 
@@ -1006,7 +1016,7 @@ class Ui_MainWindow(object):
         self.horizontalSlider_skewness.valueChanged.connect(self.wavelet_update)
         self.lineEdit_N.editingFinished.connect(self.wavelet_update)
 
-        self.doubleSpinBox_binsize.valueChanged.connect(self.update_params)
+        self.doubleSpinBox_binsize.editingFinished.connect(self.update_params)
         self.doubleSpinBox_windowsize.valueChanged.connect(self.update_params)
         self.spinBox_buffersize.valueChanged.connect(self.update_params)
         self.doubleSpinBox_scales_min.valueChanged.connect(self.update_params)
@@ -1093,12 +1103,15 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_summary), QCoreApplication.translate("MainWindow", u"Summary", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_dist), QCoreApplication.translate("MainWindow", u"Distributions", None))
         self.pushButton_save_events.setText(QCoreApplication.translate("MainWindow", u"Save As", None))
+        self.pushButton_info_events.setText(QCoreApplication.translate("MainWindow", u"More Info", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_list), QCoreApplication.translate("MainWindow", u"Events List", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.results_page), QCoreApplication.translate("MainWindow", u"Results", None))
         self.groupBox_binning_and_window.setTitle(QCoreApplication.translate("MainWindow", u"Binning", None))
         self.label_binsize.setText(QCoreApplication.translate("MainWindow", u"Bin size [ms]", None))
     # retranslateUi
 	
+        self.load_params()
+
     def config_init(self):
         if os.path.exists(str(Path.home())+"/.SMDconfig"):
             with open(str(Path.home())+"/.SMDconfig") as cf:
@@ -1177,13 +1190,13 @@ class Ui_MainWindow(object):
         self.spinBox_resolution_cwt.setValue(self.params['cwt']['resolution'])
         self.spinBox_selectivity.setValue(self.params['cwt']['selectivity'])
         self.doubleSpinBox_extent.setValue(self.params['cwt']['extent'])
-        self.doubleSpinBox_binsize.setValue(self.params['binsize'])
+        self.doubleSpinBox_binsize.setValue(self.params['binsize']*1e3)
         self.doubleSpinBox_windowsize.setValue(self.params['window'])
         self.spinBox_buffersize.setValue(self.params['buffer'])
 
     def get_file_list(self, signal):
         self.params['currentdir'] = self.dirmodel.filePath(signal)+'/'
-        files = QDir(self.dirmodel.filePath(signal),"*.ptu *.PTU").entryList()
+        files = QDir(self.dirmodel.filePath(signal),"*.ptu *.PTU *.txt *.TXT *.csv *.CSV").entryList()
         self.listWidget_files.clear()
         [self.listWidget_files.addItem(f) for f in files]
 

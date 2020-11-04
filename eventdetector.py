@@ -1,6 +1,6 @@
 import numpy as np
 import os as os
-from scipy.signal import find_peaks
+from scipy.signal import (find_peaks, decimate)
 import scipy.spatial.distance as dist
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
@@ -11,9 +11,12 @@ from concurrent.futures import as_completed
 from threading import Lock
 import h5py as h5py
 import sys as sys
+from PySide2.QtWidgets import QMessageBox
 from PySide2.QtCore import Signal, Slot, QObject
 import mmap
 import queue
+import pandas as pd
+import ptu as ptu
 
 d_type = np.dtype([('time', 'f8'), ('scale', 'f8'), ('coeff', 'f8'), ('N', 'f8'), ('label', 'i8')])
 
@@ -187,7 +190,7 @@ def find_events(signal, wavelets, scales, pad, slice_l, thresh, selectivity, dt,
                                                                     [i]*len(_index))), dtype=d_type), axis=0)
             _cwt_list[k] = (_cwt)
             # print(_events)
-        return _events, _cwt_list, slice_l*dt
+        return _events, _cwt_list, slice_l*dt, _cwt.shape[1]*dt
             # fig, ax1 = plt.subplots(1,1,figsize=(14,4))
             # ax2 = plt.twinx(ax1)
             # ax1.yaxis.tick_right()
@@ -243,9 +246,10 @@ class eventdetector(QObject):
     started = Signal(bool)
     showevents = Signal(object)
     drawcwt = Signal(object)
+    message = Signal(str)
     def __init__(self):
         QObject.__init__(self)
-        self.ptufile = ''
+        self.ts = None
         self.scales = {}
         self.window = {}
         self.resolution = 10
@@ -265,51 +269,155 @@ class eventdetector(QObject):
             scales = np.logspace(np.log10(self.scales['min']), np.log10(self.scales['max']), self.scales['count'], dtype=np.float64)
         else:
             scales = np.linspace(self.scales['min'], self.scales['max'], self.scales['count'], dtype=np.float64)
-        dt = min(scales)/self.resolution
         pad = max([max([len(w) for w in wavelets[k]['wavelets']]) for k in wavelets.keys()])
-        with h5py.File(os.path.splitext(self.ptufile.filename)[0]+'.hdf5', 'a') as f:
-            print(f.keys())
-            if f'{dt:010.6f}' not in f.keys():
-                self.ptufile.binsize = dt
-                self.ptufile.processHT2()
+        self.ts.dt = min(scales)
+        self.ts.active = True
+        dt = min(scales)/self.resolution
+        if self.ts.type == 'ptu':       # TimeHarp Traces
+            self.ts.load(plot=True, relim=False)
+            self.message.emit('Detecting events...')
+            with h5py.File(os.path.splitext(self.ts.filename)[0]+'.hdf5', 'a') as f:
+                print(f.keys())
+                if f'{dt:010.6f}' not in f.keys():
+                    self.ts.dt = dt
+                    self.ts.processHT2()
+                _xlim = [0, -1]
+                signal = f[f'{dt:010.6f}']
+                print(signal['time'][0],signal['time'][-1])
+                if (self.window['l'] == 0):
+                    _xlim[0] = 0
+                else:
+                    _xlim[0] = np.where(signal['time'][:] >= self.window['l'])[0][0]
+                if (self.window['r'] == -1):
+                    _xlim[1] = -1
+                else:
+                    _xlim[1] = np.where(signal['time'][:] <= self.window['r'])[0][-1]
+                
+                slices = list(range(self.chunksize, _xlim[1]-_xlim[0]+1, self.chunksize))
+                if _xlim[0] < pad:
+                    if _xlim[1]+pad > len(signal['time'][:])-1:
+                        slices_l = [0]+[s-pad for s in slices]
+                        slices_r = [s+pad for s in slices]+[_xlim[1]-_xlim[0]]
+                        slices  = [0]+slices
+                        signals = [signal['count'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
+                        signals[0] = np.pad(signals[0], (pad,0), mode='constant', constant_values=(0,0))
+                        signals[-1] = np.pad(signals[-1], (0,pad), mode='constant', constant_values=(0,0))
+                    else:
+                        slices_l = [0]+[s-pad for s in slices]
+                        slices_r = [s+pad for s in slices]+[_xlim[1]-_xlim[0]+pad]
+                        slices  = [0]+slices
+                        signals = [signal['count'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
+                        signals[0] = np.pad(signals[0], (pad,0), mode='constant', constant_values=(0,0))
+                else:
+                    if _xlim[1]+pad > len(signal['time'][:])-1:
+                        slices_l = [-pad]+[s-pad for s in slices]
+                        slices_r = [s+pad for s in slices]+[_xlim[1]-_xlim[0]]
+                        slices  = [0]+slices
+                        signals = [signal['count'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
+                        signals[-1] = np.pad(signals[-1], (0,pad), mode='constant', constant_values=(0,0))
+                    else:
+                        slices_l = [-pad]+[s-pad for s in slices]
+                        slices_r = [s+pad for s in slices]+[_xlim[1]-_xlim[0]+pad]
+                        slices  = [0]+slices
+                        signals = [signal['count'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
+                n, total = 0, len(signals)
+                # print(total)
+                _events = []
+                self.selected_events = []
+        #         find_events(signal['count'][_xlim[0]:_xlim[1]], wavelets, scales, pad, slices[0], thresh, selectivity, dt, log=log, plot=True)
+        #         return
+                with Executor() as e:
+                    # _events = self.find_events(signals[0], wavelets, scales, pad, slices[0], threshold, selectivity, dt, log=log, plot=False)
+                    # print('events',_events)
+                    _futures = [e.submit(find_events, s, wavelets, scales, pad, slices[m], self.threshold, self.selectivity, dt, log=self.log, plot=self.cwt_plot) for m,s in enumerate(signals)]
+                    for _f in as_completed(_futures):
+                        if self.cwt_plot:
+                            _result = _f.result()
+                            _events.append(_result[0])
+                            _cwt_list = [_result[1],_result[2]+signal['time'][_xlim[0]],_result[3]]
+                            # self.drawcwt.emit(_cwt_list)
+                        else:
+                            _events.append(_f.result())
+                        n += 1
+                        progress = 100*n/total
+                        self.progress.emit(progress)
+                    _events = np.concatenate(tuple(_events), axis=0)
+        #             _events['time'] += signal['time'][_xlim[0]]*1e-12
+        #             return _events
+                    if len(_events) > 0:
+                        for i,k in enumerate(wavelets.keys()):
+                            if (np.count_nonzero(_events['label']==i) == 0):
+                                continue
+                            _islands = detect_islands(_events[_events['label'] == i],self.threshold)
+                            n, total = 0, len(_islands)
+                            if self.refine:
+        #                         _futures = [e.submit(spectral_cluster,_island,thresh,selectivity,cwt_plot) for _island in _islands]
+                                _futures = [e.submit(select_events,_island,self.threshold,self.selectivity,self.extent,self.cwt_plot) for _island in _islands]
+                                for _f in as_completed(_futures):
+                                    n += 1
+                                    self.selected_events.append(_f.result())
+                                    progress = 100*n/total
+                                    self.progress.emit(progress)
+                            else:
+                                self.selected_events.append([np.array(_island[np.argmax(_island['coeff'])]) for _island in _islands])
+                        self.selected_events = np.concatenate(tuple(self.selected_events), axis=0)
+                        if len(wavelets.keys()) > 1:
+        #                     self.selected_events = [spectral_cluster(_island,thresh,selectivity,cwt_plot) for _island in detect_islands(self.selected_events,thresh,selectivity)]
+                            self.selected_events = [select_events(_island,self.threshold,plot=self.cwt_plot) for _island in detect_islands(self.selected_events,self.threshold)]
+                            # self.selected_events = filter_events(self.selected_events, selectivity=selectivity, refine=refine)
+                            self.selected_events = np.concatenate(tuple(self.selected_events), axis=0)
+                        self.selected_events['time'] += signal['time'][_xlim[0]]
+                        if self.save:
+                            if f'events/{self.threshold:.2f}' in f[f'{dt:010.6f}'].keys():
+                                del f[f'{dt:010.6f}'][f'events/{self.threshold:.2f}']
+                            for s in self.selected_events.dtype.names:
+                                f[f'{dt:010.6f}'].create_dataset(f'events/{self.threshold:.2f}/{s}', data=self.selected_events[s])
+        elif (self.ts.type == 'nanopore'):  # Nanopore Traces
+            self.ts.dt = dt
+            self.ts.load(plot=True, relim=False)
+            # self.ts.trace = self.ts.trace.rolling(window=int(dt/self.ts.dt), win_type='hamming').mean()
+            # self.ts.trace = pd.DataFrame({'time':self.ts.trace['time'][::int(dt/self.ts.nanopore_globres)],
+            #                               'current':decimate(self.ts.trace['current'],int(dt/self.ts.nanopore_globres)),
+            #                               'voltage':decimate(self.ts.trace['voltage'],int(dt/self.ts.nanopore_globres))})
             _xlim = [0, -1]
-            signal = f[f'{dt:010.6f}']
+            signal = self.ts.trace
+            self.message.emit('Detecting events...')
             if (self.window['l'] == 0):
                 _xlim[0] = 0
             else:
-                _xlim[0] = np.where(signal['time'][:] >= self.window['l']*1e12)[0][0]
+                _xlim[0] = np.where(signal['time'] >= self.window['l'])[0][0]
             if (self.window['r'] == -1):
                 _xlim[1] = -1
             else:
-                _xlim[1] = np.where(signal['time'][:] <= self.window['r']*1e12)[0][-1]
+                _xlim[1] = np.where(signal['time'] <= self.window['r'])[0][-1]
             
             slices = list(range(self.chunksize, _xlim[1]-_xlim[0]+1, self.chunksize))
             if _xlim[0] < pad:
-                if _xlim[1]+pad > len(signal['time'][:])-1:
+                if _xlim[1]+pad > len(signal['time'])-1:
                     slices_l = [0]+[s-pad for s in slices]
                     slices_r = [s+pad for s in slices]+[_xlim[1]-_xlim[0]]
                     slices  = [0]+slices
-                    signals = [signal['count'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
+                    signals = [signal['current'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
                     signals[0] = np.pad(signals[0], (pad,0), mode='constant', constant_values=(0,0))
                     signals[-1] = np.pad(signals[-1], (0,pad), mode='constant', constant_values=(0,0))
                 else:
                     slices_l = [0]+[s-pad for s in slices]
                     slices_r = [s+pad for s in slices]+[_xlim[1]-_xlim[0]+pad]
                     slices  = [0]+slices
-                    signals = [signal['count'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
+                    signals = [signal['current'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
                     signals[0] = np.pad(signals[0], (pad,0), mode='constant', constant_values=(0,0))
             else:
-                if _xlim[1]+pad > len(signal['time'][:])-1:
+                if _xlim[1]+pad > len(signal['time'])-1:
                     slices_l = [-pad]+[s-pad for s in slices]
                     slices_r = [s+pad for s in slices]+[_xlim[1]-_xlim[0]]
                     slices  = [0]+slices
-                    signals = [signal['count'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
+                    signals = [signal['current'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
                     signals[-1] = np.pad(signals[-1], (0,pad), mode='constant', constant_values=(0,0))
                 else:
                     slices_l = [-pad]+[s-pad for s in slices]
                     slices_r = [s+pad for s in slices]+[_xlim[1]-_xlim[0]+pad]
                     slices  = [0]+slices
-                    signals = [signal['count'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
+                    signals = [signal['current'][_xlim[0]+slices_l[n]:_xlim[0]+slices_r[n]] for n in range(len(slices_l))]
             n, total = 0, len(signals)
             # print(total)
             _events = []
@@ -324,7 +432,7 @@ class eventdetector(QObject):
                     if self.cwt_plot:
                         _result = _f.result()
                         _events.append(_result[0])
-                        _cwt_list = [_result[1],_result[2]+signal['time'][_xlim[0]]*1e-12]
+                        _cwt_list = [_result[1],_result[2]+signal['time'][_xlim[0]],_result[3]]
                         self.drawcwt.emit(_cwt_list)
                     else:
                         _events.append(_f.result())
@@ -353,19 +461,16 @@ class eventdetector(QObject):
                     self.selected_events = np.concatenate(tuple(self.selected_events), axis=0)
                     if len(wavelets.keys()) > 1:
     #                     self.selected_events = [spectral_cluster(_island,thresh,selectivity,cwt_plot) for _island in detect_islands(self.selected_events,thresh,selectivity)]
-                        self.selected_events = [select_events(_island,self.threshold,self.cwt_plot) for _island in detect_islands(self.selected_events,self.threshold)]
+                        self.selected_events = [select_events(_island,self.threshold,plot=self.cwt_plot) for _island in detect_islands(self.selected_events,self.threshold)]
                         # self.selected_events = filter_events(self.selected_events, selectivity=selectivity, refine=refine)
                         self.selected_events = np.concatenate(tuple(self.selected_events), axis=0)
-                    self.selected_events['time'] += signal['time'][_xlim[0]]*1e-12
+                    self.selected_events['time'] += signal['time'][_xlim[0]]
                     if self.save:
-                        if f'events/{self.threshold:.2f}' in f[f'{dt:010.6f}'].keys():
-                            del f[f'{dt:010.6f}'][f'events/{self.threshold:.2f}']
-                        for s in self.selected_events.dtype.names:
-                            f[f'{dt:010.6f}'].create_dataset(f'events/{self.threshold:.2f}/{s}', data=self.selected_events[s])
-            
+                        print(self.selected_events)
         if len(self.selected_events) == 0:
             self.selected_events = np.empty((0,), dtype=d_type)
         self.started.emit(False)
+        self.message.emit('Displaying events...')
         self.showevents.emit(self.selected_events)
         return self.selected_events
 
@@ -410,11 +515,11 @@ class eventdetector(QObject):
             if (self.window['l'] == 0):
                 _xlim[0] = 0
             else:
-                _xlim[0] = np.where(signal['time'][:] >= self.window['l']*1e12)[0][0]
+                _xlim[0] = np.where(signal['time'][:] >= self.window['l'])[0][0]
             if (self.window['r'] == -1):
                 _xlim[1] = -1
             else:
-                _xlim[1] = np.where(signal['time'][:] <= self.window['r']*1e12)[0][-1]
+                _xlim[1] = np.where(signal['time'][:] <= self.window['r'])[0][-1]
             
             slices = list(range(self.chunksize, len(signal['count'][_xlim[0]:_xlim[1]]), self.chunksize))
             slices_l = [0]+[s-pad for s in slices]
@@ -437,7 +542,7 @@ class eventdetector(QObject):
                     if self.cwt_plot:
                         _result = _f.result()
                         _events.append(_result[0])
-                        _cwt_list = [_result[1],_result[2]+signal['time'][_xlim[0]]*1e-12]
+                        _cwt_list = [_result[1],_result[2]+signal['time'][_xlim[0]]]
                         self.drawcwt.emit(_cwt_list)
                     else:
                         _events.append(_f.result())
@@ -469,7 +574,7 @@ class eventdetector(QObject):
                         self.selected_events = [select_events(_island,self.threshold,self.cwt_plot) for _island in detect_islands(self.selected_events,self.threshold)]
                         # self.selected_events = filter_events(self.selected_events, selectivity=selectivity, refine=refine)
                         self.selected_events = np.concatenate(tuple(self.selected_events), axis=0)
-                    self.selected_events['time'] += signal['time'][_xlim[0]]*1e-12
+                    self.selected_events['time'] += signal['time'][_xlim[0]]
                     if self.save:
                         if f'events/{self.threshold:.2f}' in f[f'{dt:010.6f}'].keys():
                             del f[f'{dt:010.6f}'][f'events/{self.threshold:.2f}']
