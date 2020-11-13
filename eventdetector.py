@@ -16,7 +16,6 @@ from PySide2.QtCore import Signal, Slot, QObject
 import mmap
 import queue
 import pandas as pd
-import ptu as ptu
 
 d_type = np.dtype([('time', 'f8'), ('scale', 'f8'), ('coeff', 'f8'), ('N', 'f8'), ('label', 'i8')])
 
