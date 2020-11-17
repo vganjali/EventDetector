@@ -23,9 +23,11 @@ class timeseries(QObject):
         self.trace = []
         self.type = ''
         self.dt = 1e-3
+        self.unit = ''
         self.chunksize = 100000
         self.ptu_globres = 250e-12
         self.nanopore_globres = 4e-6
+        self.pm_globres = 2e-3
         self.queue = queue.Queue(maxsize=20)
         self.active = False
         self.update_interval = 50 #ms
@@ -37,12 +39,16 @@ class timeseries(QObject):
             self.message.emit('Reading file...')
             if os.path.splitext(self.filename)[1] == '.ptu':       # TimeHarp Traces
                 self.type = 'ptu'
+                self.unit = f"Intensity [cnts/{self.dt*1e3:g}ms]"
                 self.processHT2()
-            elif (os.path.splitext(self.filename)[1] == '.txt' or os.path.splitext(self.filename)[1] == '.csv'):  # Nanopore Traces
+            elif (os.path.splitext(self.filename)[1] == '.txt'):  # Nanopore Traces
                 try:
                     tmp = pd.read_csv(self.filename, sep='\t', header=None, names=['time','current','voltage'], engine='c')
-                    self.trace = {'time':tmp['time'].to_numpy(), 'current':tmp['current'].to_numpy()}
-                    self.nanopore_globres = self.trace['time'][1]-self.trace['time'][0]
+                    _columns = tmp.columns
+                    print(_columns)
+                    self.unit = u"Current [\u00B5A]"
+                    self.trace = {'time':tmp[_columns[0]].to_numpy(), 'current':tmp[_columns[1]].to_numpy()}
+                    self.nanopore_globres = self.trace[_columns[0]][1]-self.trace[_columns[0]][0]
                     # self.trace = self.trace.rolling(window=int(self.dt/self.nanopore_globres), win_type='hamming').mean().dropna()
                     self.type = 'nanopore'
                 except Exception as excpt:
@@ -64,6 +70,29 @@ class timeseries(QObject):
                 self.dt = _dt*self.nanopore_globres
                 # self.trace = self.trace.groupby(lambda x: x/(self.dt/dt)).mean().groupby(lambda y: y/(self.dt/dt), axis=1).mean()
                 # print(self.trace)
+            elif (os.path.splitext(self.filename)[1] == '.csv'):    # Power Meter
+                try:
+                    tmp = pd.read_csv(self.filename,sep=';',skiprows=5,skipfooter=8,date_parser=True,skip_blank_lines=True,skipinitialspace=True,engine='python')
+                    _columns = tmp.columns
+                    print(_columns)
+                    self.unit = F"Power [{_columns[2].split('(')[1].split(')')[0]}]"
+                    _time = pd.to_datetime(tmp[_columns[0]]+tmp[_columns[1]],format = '%m/%d/%Y%H:%M:%S.%f')
+                    self.pm_globres = _time.diff().min().total_seconds()
+                    self.type = 'powermeter'
+                except Exception as excpt:
+                    # print(excpt)
+                    self.started.emit(False)
+                    self.message.emit('Unsupported file')
+                    return
+                _dt = floor(self.dt/self.pm_globres)
+                _power = pd.Series(data=tmp[_columns[2]].values, index=_time).fillna(method='bfill').resample(f'{_dt}ms',origin='epoch').mean().fillna(method='bfill')
+                _idx = np.arange(0,len(_time),_dt)
+                _decimated = {'time': np.arange(len(_idx[1:]))*self.dt}
+                _tmp = np.split(_power, _idx[1:])
+                # [print(_t) for _t in _tmp]
+                _decimated['power'] = np.stack([np.mean(_t) for _t in _tmp[:-1]])
+                self.trace = _decimated
+                self.dt = _dt*self.pm_globres
             if plot:
                 self.updateplot.emit(relim)
         self.started.emit(False)

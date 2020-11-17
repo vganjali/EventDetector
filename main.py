@@ -104,12 +104,12 @@ class MainWindow(QMainWindow):
                 # self.ui.params['binsize'] = self.ui.doubleSpinBox_binsize.value()*1e-3
                 # self.ui.params['window'] = self.ui.doubleSpinBox_windowsize.value()
                 self.ts.filename = self.ui.params['currentdir']+self.ui.lineEdit_filename.text()+'.ptu'
-                self.ts.binsize = self.ui.params['binsize']
+                self.ts.dt = self.ui.params['binsize']
                 self.ts.buffersize = int(self.ui.params['buffer']*1024*1024/20/4)
                 self.ts.active = True
                 while not self.ts.queue.empty():
                     self.ts.queue.get()
-                self.ui.plot_line.setLabel('left',f"Intensity [cnts/{self.ts.binsize*1e3:g}ms]")
+                self.ui.plot_line.setLabel('left',f"Intensity [cnts/{self.ts.dt*1e3:g}ms]")
                 self.ui.plot_line.disableAutoRange()
                 self.rt_plot_line = self.ui.plot_line.plot(
                     [],
@@ -280,7 +280,7 @@ class MainWindow(QMainWindow):
         if self.ts.type == 'ptu':       # TimeHarp Traces
             with h5py.File(os.path.splitext(self.ts.filename)[0]+'.hdf5', 'r') as f:
                 self.ui.plot_line.disableAutoRange()
-                self.ui.plot_line.setLabel('left',f"Intensity [cnts/{self.ts.dt*1e3:g}ms]")
+                self.ui.plot_line.setLabel('left',self.ts.unit)
                 self.ui.plot_line.plot(
                     f[f"{self.ts.dt:010.6f}"]['time'][:],
                     f[f"{self.ts.dt:010.6f}"]['count'][:],
@@ -298,13 +298,31 @@ class MainWindow(QMainWindow):
                 self.ui.setYRange()
         elif (self.ts.type == 'nanopore'):  # Nanopore Traces
             self.ui.plot_line.disableAutoRange()
-            self.ui.plot_line.setLabel('left',"Current [pA]")
+            self.ui.plot_line.setLabel('left',self.ts.unit)
             self.ui.plot_line.plot(
                 self.ts.trace['time'],
                 self.ts.trace['current'],
                 pen=pg.mkPen(color='b'),
                 clear=True,
                 name='Current',
+                zvalue=-1
+                # fillLevel=0,
+                # fillBrush=pg.mkBrush(color='b'),
+                )
+            # self.ui.plot_line.setDownsampling(ds=True, auto=False, mode='mean')
+            # self.ui.plot_line.setClipToView(clip=True)
+            if relim:
+                self.ui.plot_line.setXRange(self.ts.trace['time'][0],self.ts.trace['time'][-1])
+            self.ui.setYRange()
+        elif (self.ts.type == 'powermeter'):  # Power Meter Traces
+            self.ui.plot_line.disableAutoRange()
+            self.ui.plot_line.setLabel('left',self.ts.unit)
+            self.ui.plot_line.plot(
+                self.ts.trace['time'],
+                self.ts.trace['power'],
+                pen=pg.mkPen(color='b'),
+                clear=True,
+                name='Power',
                 zvalue=-1
                 # fillLevel=0,
                 # fillBrush=pg.mkBrush(color='b'),
@@ -346,6 +364,7 @@ class MainWindow(QMainWindow):
         #     self.statusBar().showMessage('Idle')
 
     def update_cwt_plot(self,cwt):
+        from scipy.io import savemat
         if self.eventdetector.cwt_plot == True:
             self.ui.image_cwt_ax.disableAutoRange()
             # print(cwt)
@@ -394,7 +413,12 @@ class MainWindow(QMainWindow):
             #                                 minYRange=1.2*self.ui.params['cwt']['scales']['count'],
             #                                 maxYRange=1.2*self.ui.params['cwt']['scales']['count'])
             # self.ui.image_cwt_vb.update()
-        
+            if self.eventdetector.save_cwt:
+                try:
+                    _dict = {'cwt_'+k:np.array(v) for k,v in cwt[0].items()}
+                    savemat(f"{os.path.splitext(self.ts.filename)[0]}_{cwt[1]:g}-{cwt[1]+cwt[2]:g}.mat", _dict)
+                except Exception as excpt:
+                    print(excpt)
     def update_events(self, events):
         # print(events)
         # colors = ['r','g','b']
@@ -469,7 +493,7 @@ if __name__ == '__main__':
             for f in update_list['files']:
                 print(f)
                 r = requests.get(f'https://raw.github.com/vganjali/EventDetector/master/{f}',timeout=3)
-                with open(f'C:/Users/Public/appdata/local/SMD Analysis/{f}', 'wb') as f:
+                with open(f'C:/Users/Default/appdata/local/SMD Analysis/{f}', 'wb') as f:
                     f.write(r.content)
             ret = QMessageBox.information(
                 None,"Update",

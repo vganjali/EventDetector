@@ -16,7 +16,6 @@ from PySide2.QtCore import Signal, Slot, QObject
 import mmap
 import queue
 import pandas as pd
-import ptu as ptu
 
 d_type = np.dtype([('time', 'f8'), ('scale', 'f8'), ('coeff', 'f8'), ('N', 'f8'), ('label', 'i8')])
 
@@ -260,6 +259,7 @@ class eventdetector(QObject):
         self.log = True
         self.refine = True
         self.save = False
+        self.save_cwt = True
         self.cwt_plot = True
         self.selected_events = []
 
@@ -275,6 +275,7 @@ class eventdetector(QObject):
         dt = min(scales)/self.resolution
         if self.ts.type == 'ptu':       # TimeHarp Traces
             self.ts.load(plot=True, relim=False)
+            self.ts.updateplot.emit(False)
             self.message.emit('Detecting events...')
             with h5py.File(os.path.splitext(self.ts.filename)[0]+'.hdf5', 'a') as f:
                 print(f.keys())
