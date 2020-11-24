@@ -2,8 +2,9 @@
     "files": [
         "main.py",
         "mainwindow.py",
-        "ptu.py",
+        "timeseries.py",
         "eventdetector.py",
+        "eventsinfo.py",
         "wavelet.py"
     ]
 }

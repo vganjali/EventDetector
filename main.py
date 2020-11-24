@@ -492,7 +492,7 @@ if __name__ == '__main__':
     with open(__file__) as main_file:
         current_version = int(re.findall(r'version:.*\d*.\d*.\d*',main_file.read())[0].split(':')[1].replace(' ','').replace('.',''))
     try:
-        r = requests.get('https://raw.github.com/vganjali/EventDetector/realtime/main.py',timeout=1)
+        r = requests.get('https://raw.github.com/vganjali/EventDetector/master/main.py',timeout=1)
         new_version = int(re.findall(r'version:.*\d*.\d*.\d*',r.text)[0].split(':')[1].replace(' ','').replace('.',''))
     except:
         new_version = 0
