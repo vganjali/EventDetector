@@ -58,6 +58,7 @@ class timeseries(QObject):
                     return
                 # bins = np.arange(len(self.trace), int(self.dt/self.nanopore_globres))
                 _dt = floor(self.dt/self.nanopore_globres)
+                if _dt == 0: _dt = 1
                 _idx = np.arange(0,len(self.trace['time']),_dt)
                 _decimated = {'time': self.trace['time'][_idx[:-1]]}
                 _tmp = np.split(self.trace['current'], _idx[1:])
@@ -87,6 +88,7 @@ class timeseries(QObject):
                     return
                 # bins = np.arange(len(self.trace), int(self.dt/self.nanopore_globres))
                 _dt = floor(self.dt/self.nanopore_globres)
+                if _dt == 0: _dt = 1
                 _idx = np.arange(0,len(self.trace['time']),_dt)
                 _decimated = {'time': self.trace['time'][_idx[:-1]]}
                 _tmp = np.split(self.trace['intensity'], _idx[1:])
@@ -114,6 +116,7 @@ class timeseries(QObject):
                     self.message.emit('Unsupported file')
                     return
                 _dt = floor(self.dt/self.pm_globres)
+                if _dt == 0: _dt = 1
                 _power = pd.Series(data=tmp[_columns[2]].values, index=_time).fillna(method='bfill').resample(f'{_dt}ms',origin='epoch').mean().fillna(method='bfill')
                 _idx = np.arange(0,len(_time),_dt)
                 _decimated = {'time': np.arange(len(_idx[1:]))*self.dt}
@@ -239,6 +242,7 @@ class timeseries(QObject):
             # self.dt = _dt*self.ptu_globres
         elif self.type == 'nanopore':
             _dt = floor(dt/self.nanopore_globres)
+            if _dt == 0: _dt = 1
             _idx = np.arange(0,len(self.trace['time']),_dt)
             _decimated = {'time': self.trace['time'][_idx[:-1]]}
             _tmp = np.split(self.trace['current'], _idx[1:])
@@ -254,6 +258,7 @@ class timeseries(QObject):
             ts_time, ts_sig = _decimated['time'], _decimated['current']
         elif self.type == 'andor':
             _dt = floor(dt/self.nanopore_globres)
+            if _dt == 0: _dt = 1
             _idx = np.arange(0,len(self.trace['time']),_dt)
             _decimated = {'time': self.trace['time'][_idx[:-1]]}
             _tmp = np.split(self.trace['intensity'], _idx[1:])
