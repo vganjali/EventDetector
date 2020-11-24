@@ -89,9 +89,9 @@ class timeseries(QObject):
                 _dt = floor(self.dt/self.nanopore_globres)
                 _idx = np.arange(0,len(self.trace['time']),_dt)
                 _decimated = {'time': self.trace['time'][_idx[:-1]]}
-                _tmp = np.split(self.trace['current'], _idx[1:])
+                _tmp = np.split(self.trace['intensity'], _idx[1:])
                 # [print(_t) for _t in _tmp]
-                _decimated['current'] = np.stack([np.mean(_t) for _t in _tmp[:-1]])
+                _decimated['intensity'] = np.stack([np.mean(_t) for _t in _tmp[:-1]])
                 self.trace = _decimated
                 # self.trace = {'current':decimate(self.trace['current'], floor(self.dt/self.nanopore_globres), ftype='iir')}
                 # self.trace = pd.DataFrame({k:decimate(self.trace[k],int(self.dt/self.nanopore_globres)) for k in self.trace.columns[1:]})
