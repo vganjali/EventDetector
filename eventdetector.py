@@ -473,6 +473,7 @@ class eventdetector(QObject):
         self.started.emit(False)
         self.message.emit('Displaying events...')
         self.showevents.emit(self.selected_events)
+        self.ts.updateplot.emit(False)
         return self.selected_events
 
     def analyze_chunk(self, chunk, wavelets):
