@@ -1196,7 +1196,7 @@ class Ui_MainWindow(object):
 
     def get_file_list(self, signal):
         self.params['currentdir'] = self.dirmodel.filePath(signal)+'/'
-        files = QDir(self.dirmodel.filePath(signal),"*.ptu *.PTU *.txt *.TXT *.csv *.CSV").entryList()
+        files = QDir(self.dirmodel.filePath(signal),"*.ptu *.PTU *.txt *.TXT *.csv *.CSV *.andor *ANDOR").entryList()
         self.listWidget_files.clear()
         [self.listWidget_files.addItem(f) for f in files]
 
