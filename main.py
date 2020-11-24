@@ -314,6 +314,24 @@ class MainWindow(QMainWindow):
             if relim:
                 self.ui.plot_line.setXRange(self.ts.trace['time'][0],self.ts.trace['time'][-1])
             self.ui.setYRange()
+        elif (self.ts.type == 'andor'):  # Andor binned Traces
+            self.ui.plot_line.disableAutoRange()
+            self.ui.plot_line.setLabel('left',self.ts.unit)
+            self.ui.plot_line.plot(
+                self.ts.trace['time'],
+                self.ts.trace['intensity'],
+                pen=pg.mkPen(color='b'),
+                clear=True,
+                name='Intensity',
+                zvalue=-1
+                # fillLevel=0,
+                # fillBrush=pg.mkBrush(color='b'),
+                )
+            # self.ui.plot_line.setDownsampling(ds=True, auto=False, mode='mean')
+            # self.ui.plot_line.setClipToView(clip=True)
+            if relim:
+                self.ui.plot_line.setXRange(self.ts.trace['time'][0],self.ts.trace['time'][-1])
+            self.ui.setYRange()
         elif (self.ts.type == 'powermeter'):  # Power Meter Traces
             self.ui.plot_line.disableAutoRange()
             self.ui.plot_line.setLabel('left',self.ts.unit)

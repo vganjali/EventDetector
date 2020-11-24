@@ -70,6 +70,35 @@ class timeseries(QObject):
                 self.dt = _dt*self.nanopore_globres
                 # self.trace = self.trace.groupby(lambda x: x/(self.dt/dt)).mean().groupby(lambda y: y/(self.dt/dt), axis=1).mean()
                 # print(self.trace)
+            elif (os.path.splitext(self.filename)[1] == '.andor'):  # Andor binned Traces
+                try:
+                    tmp = pd.read_csv(self.filename, sep='\t', header=None, names=['time','intensity'], engine='c')
+                    _columns = tmp.columns
+                    print(_columns)
+                    self.unit = u"Intensity [a.u.]"
+                    self.trace = {'time':tmp[_columns[0]].to_numpy(), 'intensity':tmp[_columns[1]].to_numpy()}
+                    self.nanopore_globres = self.trace[_columns[0]][1]-self.trace[_columns[0]][0]
+                    # self.trace = self.trace.rolling(window=int(self.dt/self.nanopore_globres), win_type='hamming').mean().dropna()
+                    self.type = 'andor'
+                except Exception as excpt:
+                    # print(excpt)
+                    self.started.emit(False)
+                    self.message.emit('Unsupported file')
+                    return
+                # bins = np.arange(len(self.trace), int(self.dt/self.nanopore_globres))
+                _dt = floor(self.dt/self.nanopore_globres)
+                _idx = np.arange(0,len(self.trace['time']),_dt)
+                _decimated = {'time': self.trace['time'][_idx[:-1]]}
+                _tmp = np.split(self.trace['current'], _idx[1:])
+                # [print(_t) for _t in _tmp]
+                _decimated['current'] = np.stack([np.mean(_t) for _t in _tmp[:-1]])
+                self.trace = _decimated
+                # self.trace = {'current':decimate(self.trace['current'], floor(self.dt/self.nanopore_globres), ftype='iir')}
+                # self.trace = pd.DataFrame({k:decimate(self.trace[k],int(self.dt/self.nanopore_globres)) for k in self.trace.columns[1:]})
+                # self.trace['time'] = np.arange(len(self.trace['current']), dtype=np.uint64)*floor(self.dt/self.nanopore_globres)*self.nanopore_globres
+                self.dt = _dt*self.nanopore_globres
+                # self.trace = self.trace.groupby(lambda x: x/(self.dt/dt)).mean().groupby(lambda y: y/(self.dt/dt), axis=1).mean()
+                # print(self.trace)
             elif (os.path.splitext(self.filename)[1] == '.csv'):    # Power Meter
                 try:
                     tmp = pd.read_csv(self.filename,sep=';',skiprows=5,skipfooter=8,date_parser=True,skip_blank_lines=True,skipinitialspace=True,engine='python')
@@ -223,6 +252,21 @@ class timeseries(QObject):
             # _decimated['time'] = np.arange(len(_decimated['current']), dtype=np.uint64)*floor(dt/self.nanopore_globres)*self.nanopore_globres
             # self.dt = floor(dt/self.nanopore_globres)*self.nanopore_globres
             ts_time, ts_sig = _decimated['time'], _decimated['current']
+        elif self.type == 'andor':
+            _dt = floor(dt/self.nanopore_globres)
+            _idx = np.arange(0,len(self.trace['time']),_dt)
+            _decimated = {'time': self.trace['time'][_idx[:-1]]}
+            _tmp = np.split(self.trace['intensity'], _idx[1:])
+            # [print(_t) for _t in _tmp]
+            _decimated['intensity'] = np.stack([np.mean(_t) for _t in _tmp[:-1]])
+            self.trace = _decimated
+            # _dt = floor(dt/self.nanopore_globres)
+            # _decimated = {'time': self.trace['time'][::_dt]}
+            # _decimated['current'] = np.mean(np.split(self.trace['current'], np.arange(len(_decimated['time'])*_dt)), axis=1)
+            # _decimated = {'current':decimate(self.trace['current'], floor(dt/self.nanopore_globres), ftype='iir')}
+            # _decimated['time'] = np.arange(len(_decimated['current']), dtype=np.uint64)*floor(dt/self.nanopore_globres)*self.nanopore_globres
+            # self.dt = floor(dt/self.nanopore_globres)*self.nanopore_globres
+            ts_time, ts_sig = _decimated['time'], _decimated['intensity']
         return ts_time, ts_sig
         # print('trace length:',ds_count.size*self.dt,'[s]')
     
