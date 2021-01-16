@@ -14,11 +14,14 @@ def find_events(data, wavelet, N, scales, threshold, dt):
         _index, _ = find_peaks(_cwt[:,n], distance=N*scales[n]/dt, height=threshold)
         _events = np.append(_events, np.array(list(zip((_index)*dt, [scales[n]]*len(_index), _cwt[_index,n], [N]*len(_index))), dtype=d_type), axis=0)
     return _events, _cwt 
-def detect_islands(all_events, extent=1): all_events_t_l = 
-    all_events['time']-0.5*extent*np.multiply(all_events['N'],all_events['scale']) _index_l = np.argsort(all_events_t_l) 
-    all_events_t_r = all_events['time']+0.5*extent*np.multiply(all_events['N'],all_events['scale']) _index_r = 
-    np.argsort(all_events_t_r) all_events_overlap = all_events_t_r[_index_r[:-1]]-all_events_t_l[_index_l[1:]] _slices = 
-    np.argwhere(all_events_overlap <= 0).flatten()+1 _islands = np.split(all_events[_index_l], _slices, axis=0) 
+def detect_islands(all_events, extent=1): 
+    all_events_t_l = all_events['time']-0.5*extent*np.multiply(all_events['N'],all_events['scale']) 
+    _index_l = np.argsort(all_events_t_l) 
+    all_events_t_r = all_events['time']+0.5*extent*np.multiply(all_events['N'],all_events['scale']) 
+    _index_r = np.argsort(all_events_t_r) 
+    all_events_overlap = all_events_t_r[_index_r[:-1]]-all_events_t_l[_index_l[1:]] 
+    _slices = np.argwhere(all_events_overlap <= 0).flatten()+1 
+    _islands = np.split(all_events[_index_l], _slices, axis=0) 
     return _islands
 def select_events(events, selectivity=1, w=1, h=1, threshold=0.2): 
     selected_events = [] 
