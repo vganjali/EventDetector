@@ -9,7 +9,8 @@ def find_events(data, wavelet, N, scales, threshold, dt):
     _events = np.empty((0,), dtype=d_type) 
     _cwt = np.empty((len(data),len(wavelet)))
     for n, w in enumerate(wavelet):
-        _cwt[:,n] = (0.5*np.correlate(data, w, mode='same')) _cwt[:,n] += np.abs(_cwt[:,n])
+        _cwt[:,n] = (0.5*np.correlate(data, w, mode='same')) 
+        _cwt[:,n] += np.abs(_cwt[:,n])
         _index, _ = find_peaks(_cwt[:,n], distance=N*scales[n]/dt, height=threshold)
         _events = np.append(_events, np.array(list(zip((_index)*dt, [scales[n]]*len(_index), _cwt[_index,n], [N]*len(_index))), dtype=d_type), axis=0)
     return _events, _cwt 
