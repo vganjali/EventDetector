@@ -2,15 +2,16 @@ import numpy as np
 from scipy.special import erf
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
-import wavelets as wvlts
+import wavelets
 
 d_type = np.dtype([('time', 'f8'), ('scale', 'f8'), ('coeff', 'f8'), ('N', 'f8')])
 def find_events(data, wavelet, N, scales, threshold, dt):
     _events = np.empty((0,), dtype=d_type) 
     _cwt = np.empty((len(data),len(wavelet)))
     for n, w in enumerate(wavelet):
-        _cwt[:,n] = (0.5*np.correlate(data, w, mode='same')) 
-        _cwt[:,n] += np.abs(_cwt[:,n])
+        _cwt[:,n] = np.abs(np.correlate(data, w, mode='same')) 
+        # _cwt[:,n] = (0.5*np.correlate(data, w, mode='same')) 
+        # _cwt[:,n] += np.abs(_cwt[:,n])
         _index, _ = find_peaks(_cwt[:,n], distance=N*scales[n]/dt, height=threshold)
         _events = np.append(_events, np.array(list(zip((_index)*dt, [scales[n]]*len(_index), _cwt[_index,n], [N]*len(_index))), dtype=d_type), axis=0)
     return _events, _cwt 
@@ -46,14 +47,20 @@ def ed_cwt(data, scales, wavelet, resolution, threshold=4, selectivity=3, extent
     selected_events = [] 
     dt = min(scales)/resolution 
     if wavelet == 'ricker': 
-        wvlts = [wvlts.ricker(s/dt) for s in scales]
+        wvlts = [wavelets.ricker(s/dt) for s in scales]
         N = 1 
     elif wavelet[:4] == 'msg-':
         N = int(wavelet[4:]) 
-        wvlts = [wvlts.msg(s/dt, N=N, mod=0.8, shift=1, skewness=0.5) for s in scales] 
+        wvlts = [wavelets.msg(s/dt, N=N, mod=0.8, shift=1, skewness=0.5) for s in scales] 
     elif wavelet[:5] == 'msge-':
         N = len(wavelet[5:]) 
-        wvlts = [wvlts.msg_encoded(s/dt, pattern=wavelet[5:], mod=1.5, shift=-2.9, skewness=0.04) for s in scales]
+        wvlts = [wavelets.msg_encoded(s/dt, pattern=wavelet[5:], mod=1.5, shift=-2.9, skewness=0.04) for s in scales]
+    elif wavelet[:7] == 'morlet-':
+        N = len(wavelet[7:]) 
+        wvlts = [wavelets.morlet(s/dt, N=N, is_complex=False) for s in scales]
+    elif wavelet[:8] == 'cmorlet-':
+        N = len(wavelet[8:]) 
+        wvlts = [wavelets.morlet(s/dt, N=N, is_complex=True) for s in scales]
     all_events, cwt = find_events(data, wvlts, N, scales, threshold, dt)
     islands = detect_islands(all_events,extent) 
     for n,island in enumerate(islands): 
